@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>HushPort uses the camera to scan the pairing QR code shown on your Mac.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_hushport._udp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>HushPort makes this iPhone discoverable to your Mac and receives audio over your local network.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
+</dict>
+</plist>

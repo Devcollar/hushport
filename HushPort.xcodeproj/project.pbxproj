@@ -1,0 +1,572 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		100000000000000000000001 /* HushPortIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000001 /* HushPortIOSApp.swift */; };
+		100000000000000000000002 /* ReceiverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* ReceiverView.swift */; };
+		100000000000000000000003 /* HushPortMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000003 /* HushPortMacApp.swift */; };
+		100000000000000000000004 /* SenderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000004 /* SenderView.swift */; };
+		100000000000000000000005 /* HushPortCore in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000001 /* HushPortCore */; };
+		100000000000000000000006 /* HushPortCore in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000002 /* HushPortCore */; };
+		100000000000000000000007 /* AudioPluginInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000007 /* AudioPluginInstaller.swift */; };
+		100000000000000000000008 /* HushPortAudioPlugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000A /* HushPortAudioPlugin.c */; };
+		100000000000000000000009 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000E /* CoreAudio.framework */; };
+		10000000000000000000000A /* HushPortAudio.driver in Embed Audio Driver */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000D /* HushPortAudio.driver */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		10000000000000000000000B /* HushPortSharedAudio.c in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000F /* HushPortSharedAudio.c */; };
+		10000000000000000000000C /* HushPortRingBuffer in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* HushPortRingBuffer */; };
+		10000000000000000000000D /* SharedAudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* SharedAudioCapture.swift */; };
+		10000000000000000000000F /* MacSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000012 /* MacSessionController.swift */; };
+		100000000000000000000010 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000013 /* MenuBarView.swift */; };
+		100000000000000000000011 /* QRCodeImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000014 /* QRCodeImage.swift */; };
+		100000000000000000000012 /* PairingScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* PairingScannerView.swift */; };
+		100000000000000000000013 /* IOSAudioPlaybackEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* IOSAudioPlaybackEngine.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C00000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 600000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 500000000000000000000003;
+			remoteInfo = HushPortAudioPlugin;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		700000000000000000000005 /* Embed Audio Driver */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Resources;
+			dstSubfolderSpec = 1;
+			files = (
+				10000000000000000000000A /* HushPortAudio.driver in Embed Audio Driver */,
+			);
+			name = "Embed Audio Driver";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		200000000000000000000001 /* HushPortIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HushPortIOSApp.swift; sourceTree = "<group>"; };
+		200000000000000000000002 /* ReceiverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverView.swift; sourceTree = "<group>"; };
+		200000000000000000000003 /* HushPortMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HushPortMacApp.swift; sourceTree = "<group>"; };
+		200000000000000000000004 /* SenderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SenderView.swift; sourceTree = "<group>"; };
+		200000000000000000000005 /* HushPort.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HushPort.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000006 /* HushPortMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HushPortMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000007 /* AudioPluginInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPluginInstaller.swift; sourceTree = "<group>"; };
+		200000000000000000000008 /* HushPortMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HushPortMac.entitlements; sourceTree = "<group>"; };
+		20000000000000000000000A /* HushPortAudioPlugin.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HushPortAudioPlugin.c; sourceTree = "<group>"; };
+		20000000000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		20000000000000000000000C /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		20000000000000000000000D /* HushPortAudio.driver */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HushPortAudio.driver; sourceTree = BUILT_PRODUCTS_DIR; };
+		20000000000000000000000E /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		20000000000000000000000F /* HushPortSharedAudio.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Sources/HushPortRingBuffer/HushPortSharedAudio.c; sourceTree = SOURCE_ROOT; };
+		200000000000000000000010 /* SharedAudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedAudioCapture.swift; sourceTree = "<group>"; };
+		200000000000000000000012 /* MacSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSessionController.swift; sourceTree = "<group>"; };
+		200000000000000000000013 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		200000000000000000000014 /* QRCodeImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeImage.swift; sourceTree = "<group>"; };
+		200000000000000000000015 /* PairingScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingScannerView.swift; sourceTree = "<group>"; };
+		200000000000000000000016 /* IOSAudioPlaybackEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSAudioPlaybackEngine.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		300000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000005 /* HushPortCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		300000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000006 /* HushPortCore in Frameworks */,
+				10000000000000000000000C /* HushPortRingBuffer in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		300000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000009 /* CoreAudio.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		400000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				400000000000000000000002 /* Sources/HushPortIOS */,
+				400000000000000000000003 /* Sources/HushPortMac */,
+				400000000000000000000005 /* Sources/HushPortAudioPlugin */,
+				400000000000000000000006 /* Frameworks */,
+				400000000000000000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		400000000000000000000002 /* Sources/HushPortIOS */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000001 /* HushPortIOSApp.swift */,
+				200000000000000000000002 /* ReceiverView.swift */,
+				200000000000000000000016 /* IOSAudioPlaybackEngine.swift */,
+				200000000000000000000015 /* PairingScannerView.swift */,
+			);
+			path = Sources/HushPortIOS;
+			sourceTree = SOURCE_ROOT;
+		};
+		400000000000000000000003 /* Sources/HushPortMac */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000003 /* HushPortMacApp.swift */,
+				200000000000000000000004 /* SenderView.swift */,
+				200000000000000000000007 /* AudioPluginInstaller.swift */,
+				200000000000000000000008 /* HushPortMac.entitlements */,
+				200000000000000000000010 /* SharedAudioCapture.swift */,
+				200000000000000000000012 /* MacSessionController.swift */,
+				200000000000000000000013 /* MenuBarView.swift */,
+				200000000000000000000014 /* QRCodeImage.swift */,
+			);
+			path = Sources/HushPortMac;
+			sourceTree = SOURCE_ROOT;
+		};
+		400000000000000000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000005 /* HushPort.app */,
+				200000000000000000000006 /* HushPortMac.app */,
+				20000000000000000000000D /* HushPortAudio.driver */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		400000000000000000000005 /* Sources/HushPortAudioPlugin */ = {
+			isa = PBXGroup;
+			children = (
+				20000000000000000000000A /* HushPortAudioPlugin.c */,
+				20000000000000000000000B /* Info.plist */,
+				20000000000000000000000C /* LICENSE.txt */,
+				20000000000000000000000F /* HushPortSharedAudio.c */,
+			);
+			path = Sources/HushPortAudioPlugin;
+			sourceTree = SOURCE_ROOT;
+		};
+		400000000000000000000006 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				20000000000000000000000E /* CoreAudio.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		500000000000000000000001 /* HushPortIOSApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 800000000000000000000002 /* Build configuration list for PBXNativeTarget "HushPortIOSApp" */;
+			buildPhases = (
+				700000000000000000000001 /* Sources */,
+				300000000000000000000001 /* Frameworks */,
+				700000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HushPortIOSApp;
+			packageProductDependencies = (
+				A00000000000000000000001 /* HushPortCore */,
+			);
+			productName = HushPortIOSApp;
+			productReference = 200000000000000000000005 /* HushPort.app */;
+			productType = "com.apple.product-type.application";
+		};
+		500000000000000000000002 /* HushPortMacApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 800000000000000000000003 /* Build configuration list for PBXNativeTarget "HushPortMacApp" */;
+			buildPhases = (
+				700000000000000000000002 /* Sources */,
+				300000000000000000000002 /* Frameworks */,
+				700000000000000000000004 /* Resources */,
+				700000000000000000000005 /* Embed Audio Driver */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C00000000000000000000002 /* PBXTargetDependency */,
+			);
+			name = HushPortMacApp;
+			packageProductDependencies = (
+				A00000000000000000000002 /* HushPortCore */,
+				A00000000000000000000003 /* HushPortRingBuffer */,
+			);
+			productName = HushPortMacApp;
+			productReference = 200000000000000000000006 /* HushPortMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		500000000000000000000003 /* HushPortAudioPlugin */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 800000000000000000000004 /* Build configuration list for PBXNativeTarget "HushPortAudioPlugin" */;
+			buildPhases = (
+				700000000000000000000006 /* Sources */,
+				300000000000000000000003 /* Frameworks */,
+				700000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HushPortAudioPlugin;
+			productName = HushPortAudio;
+			productReference = 20000000000000000000000D /* HushPortAudio.driver */;
+			productType = "com.apple.product-type.bundle";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXTargetDependency section */
+		C00000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 500000000000000000000003 /* HushPortAudioPlugin */;
+			targetProxy = C00000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXProject section */
+		600000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					500000000000000000000001 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					500000000000000000000002 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					500000000000000000000003 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+				};
+			};
+			buildConfigurationList = 800000000000000000000001 /* Build configuration list for PBXProject "HushPort" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 400000000000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				900000000000000000000001 /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 400000000000000000000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				500000000000000000000001 /* HushPortIOSApp */,
+				500000000000000000000002 /* HushPortMacApp */,
+				500000000000000000000003 /* HushPortAudioPlugin */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		700000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		700000000000000000000004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		700000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		700000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000001 /* HushPortIOSApp.swift in Sources */,
+				100000000000000000000002 /* ReceiverView.swift in Sources */,
+				100000000000000000000013 /* IOSAudioPlaybackEngine.swift in Sources */,
+				100000000000000000000012 /* PairingScannerView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		700000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000003 /* HushPortMacApp.swift in Sources */,
+				100000000000000000000004 /* SenderView.swift in Sources */,
+				100000000000000000000007 /* AudioPluginInstaller.swift in Sources */,
+				10000000000000000000000D /* SharedAudioCapture.swift in Sources */,
+				10000000000000000000000F /* MacSessionController.swift in Sources */,
+				100000000000000000000010 /* MenuBarView.swift in Sources */,
+				100000000000000000000011 /* QRCodeImage.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		700000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000008 /* HushPortAudioPlugin.c in Sources */,
+				10000000000000000000000B /* HushPortSharedAudio.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B00000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		B00000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		B00000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V2HN22942W;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/HushPortIOS/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HushPort;
+				INFOPLIST_KEY_NSCameraUsageDescription = "HushPort uses the camera to scan the pairing QR code shown on your Mac.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "HushPort receives audio from your Mac over the local network.";
+				INFOPLIST_KEY_UIBackgroundModes = audio;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport;
+				PRODUCT_NAME = HushPort;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B00000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V2HN22942W;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/HushPortIOS/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HushPort;
+				INFOPLIST_KEY_NSCameraUsageDescription = "HushPort uses the camera to scan the pairing QR code shown on your Mac.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "HushPort receives audio from your Mac over the local network.";
+				INFOPLIST_KEY_UIBackgroundModes = audio;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport;
+				PRODUCT_NAME = HushPort;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B00000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				CODE_SIGN_ENTITLEMENTS = Sources/HushPortMac/HushPortMac.entitlements;
+				DEVELOPMENT_TEAM = V2HN22942W;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/HushPortMac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HushPort;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.mac;
+				PRODUCT_NAME = HushPortMac;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		B00000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				CODE_SIGN_ENTITLEMENTS = Sources/HushPortMac/HushPortMac.entitlements;
+				DEVELOPMENT_TEAM = V2HN22942W;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/HushPortMac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HushPort;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.mac;
+				PRODUCT_NAME = HushPortMac;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+		B00000000000000000000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Sources/HushPortAudioPlugin/HushPortAudioPlugin.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V2HN22942W;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = Sources/HushPortAudioPlugin/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACH_O_TYPE = mh_bundle;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.audio;
+				PRODUCT_NAME = HushPortAudio;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = driver;
+			};
+			name = Debug;
+		};
+		B00000000000000000000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Sources/HushPortAudioPlugin/HushPortAudioPlugin.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V2HN22942W;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = Sources/HushPortAudioPlugin/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACH_O_TYPE = mh_bundle;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.audio;
+				PRODUCT_NAME = HushPortAudio;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = driver;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		800000000000000000000001 /* Build configuration list for PBXProject "HushPort" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B00000000000000000000001 /* Debug */,
+				B00000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		800000000000000000000002 /* Build configuration list for PBXNativeTarget "HushPortIOSApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B00000000000000000000003 /* Debug */,
+				B00000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		800000000000000000000003 /* Build configuration list for PBXNativeTarget "HushPortMacApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B00000000000000000000005 /* Debug */,
+				B00000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		800000000000000000000004 /* Build configuration list for PBXNativeTarget "HushPortAudioPlugin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B00000000000000000000007 /* Debug */,
+				B00000000000000000000008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		900000000000000000000001 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A00000000000000000000001 /* HushPortCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 900000000000000000000001 /* XCLocalSwiftPackageReference "." */;
+			productName = HushPortCore;
+		};
+		A00000000000000000000002 /* HushPortCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 900000000000000000000001 /* XCLocalSwiftPackageReference "." */;
+			productName = HushPortCore;
+		};
+		A00000000000000000000003 /* HushPortRingBuffer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 900000000000000000000001 /* XCLocalSwiftPackageReference "." */;
+			productName = HushPortRingBuffer;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 600000000000000000000001 /* Project object */;
+}
