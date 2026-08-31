@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy — HushPort</title>
+  <style>
+    :root {
+      --bg: #050814;
+      --text: #f4f6ff;
+      --muted: rgba(244, 246, 255, 0.65);
+      --border: rgba(255, 255, 255, 0.09);
+      --cyan: #33c3ff;
+      --max: 720px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px 64px;
+    }
+    .wrap { max-width: var(--max); margin: 0 auto; }
+    a { color: var(--cyan); }
+    h1 { font-size: 2rem; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .updated { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
+    h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+    p, li { color: var(--muted); margin-bottom: 12px; }
+    ul { padding-left: 1.2rem; margin-bottom: 16px; }
+    .back { display: inline-block; margin-bottom: 24px; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="./">&larr; HushPort</a>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: August 31, 2026</p>
+
+    <p>
+      HushPort is made by <strong>Devcollar Private Limited</strong>.
+      This policy describes how the HushPort Mac and iPhone apps handle information during the free public beta.
+    </p>
+
+    <h2>Summary</h2>
+    <ul>
+      <li><strong>No user accounts</strong> — you do not sign up or log in.</li>
+      <li><strong>No cloud audio</strong> — audio streams directly between your Mac and iPhone on your local network.</li>
+      <li><strong>No advertising or analytics SDKs</strong> in the current beta builds.</li>
+      <li><strong>Pairing data stays on your devices</strong> — trusted device names and network addresses are stored locally.</li>
+    </ul>
+
+    <h2>What HushPort accesses</h2>
+    <ul>
+      <li><strong>Local network</strong> — to discover your other device and send audio/control messages on your Wi&#8209;Fi.</li>
+      <li><strong>Camera (iPhone)</strong> — only when you scan a pairing QR code. Video is not recorded or uploaded.</li>
+      <li><strong>Microphone / audio</strong> — Mac captures system audio routed to the HushPort virtual output; iPhone plays received audio locally.</li>
+    </ul>
+
+    <h2>What we do not collect</h2>
+    <p>
+      The beta apps do not send your audio, pairing codes, device contents, or personal information to Devcollar servers.
+      There is no central HushPort backend in this version.
+    </p>
+
+    <h2>GitHub</h2>
+    <p>
+      If you choose to report a bug via <a href="https://github.com/Devcollar/hushport/issues">GitHub Issues</a>,
+      your report is governed by GitHub&rsquo;s privacy policy. Please avoid posting sensitive information in public issues.
+    </p>
+
+    <h2>Source code</h2>
+    <p>
+      HushPort source is publicly visible on GitHub for transparency.
+      See our <a href="https://github.com/Devcollar/hushport/blob/main/LICENSE">license</a> for use restrictions.
+    </p>
+
+    <h2>Children</h2>
+    <p>HushPort is not directed at children under 13.</p>
+
+    <h2>Changes</h2>
+    <p>We may update this policy as the product moves toward App Store / TestFlight distribution. The date above will change when we do.</p>
+
+    <h2>Contact</h2>
+    <p>
+      Questions: open a <a href="https://github.com/Devcollar/hushport/issues/new/choose">GitHub issue</a>
+      or contact Devcollar through your usual support channel.
+    </p>
+  </div>
+</body>
+</html>
