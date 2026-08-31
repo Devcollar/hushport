@@ -123,6 +123,13 @@ struct ReceiverView: View {
                     .font(.system(size: 23, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
+                Text("Beta")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.orange.opacity(0.18), in: Capsule())
+
                 Spacer()
 
                 Label("Secure", systemImage: "lock.fill")
@@ -265,6 +272,13 @@ struct ReceiverView: View {
             Text("HushPort")
                 .font(.system(size: 25, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
+
+            Text("Beta")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.orange)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(.orange.opacity(0.22), in: Capsule())
 
             Spacer(minLength: 10)
 

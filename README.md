@@ -1,8 +1,23 @@
 # HushPort
 
-**Hear your Mac through your iPhone.** HushPort streams macOS system audio to your iPhone over local Wi‑Fi so you can listen on earphones — no cloud, no cables between the devices.
+![Beta](https://img.shields.io/badge/status-public%20beta-orange)
+![Platform](https://img.shields.io/badge/platform-macOS%20%2B%20iOS-lightgrey)
+![License](https://img.shields.io/badge/license-proprietary-blue)
+
+**Stream your Mac's audio to your iPhone.**
+
+HushPort turns your iPhone into a wireless audio receiver for your Mac — over your local network. **No account. No cloud. No tracking.**
 
 Your Mac. Your phone. Your earphones.
+
+### How it works
+
+1. Open **HushPort** on Mac and iPhone.
+2. **Scan the QR code** to pair once.
+3. On iPhone, tap **Start Listening**.
+4. On Mac, tap **Stream Mac audio**.
+
+> **Free public beta** — occasional audio dropouts or connection issues may occur. [Report issues](https://github.com/Devcollar/hushport/issues/new/choose) on GitHub.
 
 <table>
   <tr>
@@ -116,6 +131,27 @@ If discovery fails, enter the iPhone IP shown in the iOS app (**This iPhone: …
 
 ---
 
+## Privacy
+
+- Audio streams **directly** between your Mac and iPhone on the local network.
+- **No** user accounts, cloud servers, or analytics in the current beta.
+- Pairing trust is stored **locally** on each device.
+- Source code is **public for inspection** under a [proprietary license](LICENSE) — viewable, not redistributable without permission.
+
+---
+
+## Known limitations (beta)
+
+- **Same Wi‑Fi required** — guest or client-isolated networks often block device-to-device traffic.
+- **Brief dropouts** may occur on busy or weak Wi‑Fi.
+- **One Mac → one iPhone** per session (multi-receiver not supported yet).
+- **System audio** requires **HushPort** selected as the Mac output (or use **Send test tone** to verify the link).
+- **IP addresses can change** after a network switch — use manual IP or re-pair if discovery fails.
+- **Long sessions** may develop slight audio delay; stop and restart listening to reset.
+- **No encryption** on the wire yet — intended for trusted home networks only.
+
+---
+
 ## How it works
 
 | Layer | Details |
@@ -174,6 +210,14 @@ Run the **`HushPortMacApp`** scheme on your Mac and **`HushPortIOSApp`** on a ph
 
 ---
 
+## License
+
+Copyright © 2026 [Devcollar Private Limited](https://github.com/Devcollar). All rights reserved.
+
+Source is **publicly visible for transparency** — not open source. See [LICENSE](LICENSE) for terms. Redistribution, modification, and commercial use require written permission.
+
+---
+
 ## Status
 
-Early-stage project — built and tested on local Wi‑Fi. Expect rough edges on network changes, discovery, and very long sessions. Issues and contributions welcome once the repo is public.
+**HushPort is a free public beta.** Built and tested on local Wi‑Fi. Bug reports and feedback welcome via [GitHub Issues](https://github.com/Devcollar/hushport/issues/new/choose).

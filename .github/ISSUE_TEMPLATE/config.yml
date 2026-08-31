@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: HushPort overview (docs)
+    url: https://github.com/Devcollar/hushport/blob/main/docs/overview.md
+    about: Architecture, protocol, and how HushPort works technically
+  - name: Known limitations
+    url: https://github.com/Devcollar/hushport/blob/main/README.md#known-limitations-beta
+    about: Expected beta limitations before filing a bug

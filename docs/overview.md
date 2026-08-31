@@ -224,7 +224,13 @@ Schemes: `HushPortMacApp`, `HushPortIOSApp`. The HAL plugin is embedded in the M
 - **System audio** requires HushPort selected as Mac output — per-app routing is not supported
 - **Not App Store distributed yet** — requires Xcode install / notarization for wider distribution
 
-**Planned:** Encrypted sessions, latency display, stronger background playback, notarized distribution.
+**Planned:** Encrypted sessions, on-screen latency display, stronger long-session sync, notarized distribution.
+
+---
+
+## License
+
+Source is publicly available for inspection under a [proprietary license](../LICENSE). Copyright © 2026 Devcollar Private Limited.
 
 ---
 

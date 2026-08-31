@@ -1,0 +1,31 @@
+HushPort — Proprietary License
+
+Copyright © 2026 Devcollar Private Limited. All rights reserved.
+
+This repository makes the HushPort source code publicly available for
+inspection and transparency only. Unless you have a separate written
+agreement with Devcollar Private Limited, the following restrictions apply:
+
+1. You may view and study the source code.
+2. You may build and run the software for personal, non-commercial evaluation.
+3. You may report bugs and suggest improvements via GitHub Issues.
+
+You may NOT, without prior written permission from Devcollar Private Limited:
+
+- Use the software for commercial purposes
+- Redistribute, sublicense, or sell the software or derivative works
+- Modify and publish forked versions of the software
+- Remove or alter copyright or license notices
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+DEVCOLLAR PRIVATE LIMITED BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+HushPort is currently distributed as a free public beta. Pricing, licensing,
+and open-source terms may change in future releases.
+
+For commercial licensing inquiries: https://github.com/Devcollar/hushport

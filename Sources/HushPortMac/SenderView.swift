@@ -112,6 +112,11 @@ struct SenderView: View {
                 Text(audioPluginInstaller.status)
                     .foregroundStyle(.secondary)
             }
+            Section {
+                Text("HushPort Public Beta — free during evaluation. Report issues on GitHub.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .frame(width: 480, height: 620)

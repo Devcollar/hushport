@@ -1,0 +1,99 @@
+name: Bug report
+description: Audio, connection, or pairing issue
+title: "[Bug]: "
+labels: ["bug", "beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying HushPort beta. The more detail you include, the faster we can fix it.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where did the issue happen?
+      options:
+        - Mac app
+        - iPhone app
+        - Both
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: HushPort version or commit
+      placeholder: e.g. main @ c236c76, or Xcode build date
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open HushPort on iPhone → Start Listening
+        2. On Mac → Stream Mac audio
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Issue type
+      options:
+        - No audio / 0 packets
+        - Crackling or dropouts
+        - Delay / lip sync drift
+        - Cannot pair
+        - Cannot connect after Wi-Fi change
+        - Discovery / wrong IP
+        - HushPort Audio driver / system output
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: network
+    attributes:
+      label: Network setup
+      description: Same Wi-Fi? Guest network? VPN? Manual IP used?
+      placeholder: e.g. Home Wi-Fi, both on 192.168.68.x, no VPN
+    validations:
+      required: false
+
+  - type: textarea
+    id: metrics
+    attributes:
+      label: App metrics (if visible)
+      description: Packet count, buffer depth, Mac status line, etc.
+      placeholder: e.g. iPhone 1,746 packets / 26 buffered; Mac streaming to 192.168.68.102
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: Both devices on the same Wi-Fi (not guest/isolated)
+          required: false
+        - label: iPhone shows Start Listening / Listening
+          required: false
+        - label: Mac output set to HushPort (for system audio)
+          required: false

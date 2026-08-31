@@ -10,6 +10,11 @@ struct MenuBarView: View {
                 Image(systemName: session.menuBarIcon)
                 Text("HushPort")
                     .font(.headline)
+                Text("Beta")
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(.orange.opacity(0.2), in: Capsule())
             }
             Text(session.status)
                 .font(.caption)
