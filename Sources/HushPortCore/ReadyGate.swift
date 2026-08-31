@@ -65,14 +65,18 @@ final class ReadyGate: @unchecked Sendable {
     func wait(for connection: NWConnection) async throws {
         if lock.withLock({ isReady }) { return }
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            lock.withLock {
-                if isReady {
-                    continuation.resume()
-                    return
-                }
-                waiters.append(continuation)
+            lock.lock()
+            if isReady {
+                lock.unlock()
+                continuation.resume()
+                return
             }
+            waiters.append(continuation)
+            lock.unlock()
+
+            let previousHandler = connection.stateUpdateHandler
             connection.stateUpdateHandler = { [weak self] state in
+                previousHandler?(state)
                 guard let self else { return }
                 switch state {
                 case .ready:
@@ -86,7 +90,7 @@ final class ReadyGate: @unchecked Sendable {
                 }
             }
             if connection.state == .ready {
-                self.resumeAll()
+                resumeAll()
             }
         }
     }

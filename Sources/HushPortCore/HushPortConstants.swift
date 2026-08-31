@@ -4,6 +4,7 @@ public enum HushPortConstants {
     public static let audioPort: UInt16 = 49_200
     public static let controlPort: UInt16 = 49_201
     public static let bonjourServiceType = "_hushport._udp"
+    public static let controlBonjourServiceType = "_hushport-control._udp"
     public static let defaultStreamID: UInt64 = 1
 
     /// Packets to receive before playback starts (~60ms at 5ms/packet).

@@ -565,6 +565,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/HushPortMac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HushPort;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "HushPort discovers your iPhone and streams audio over your local network.";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.mac;
@@ -586,6 +587,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/HushPortMac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HushPort;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "HushPort discovers your iPhone and streams audio over your local network.";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.mac;

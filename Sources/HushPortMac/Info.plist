@@ -5,6 +5,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_hushport._udp</string>
+		<string>_hushport-control._udp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>HushPort discovers your iPhone and streams audio over your local network.</string>

@@ -53,28 +53,21 @@ struct SenderView: View {
             Section("Nearby iPhone") {
                 if session.pairedPhone != nil {
                     LabeledContent("Discovered nearby", value: session.phoneReachable ? "Yes" : "No")
-                    Text("Shows whether your iPhone is advertising on this network — not whether it is on the same Wi-Fi.")
+                    if let receiver = session.pairedReceiver {
+                        LabeledContent("Services", value: serviceReadinessLabel(receiver.readiness))
+                    }
+                    Text("Shows whether your paired iPhone is advertising on this network.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                if session.peers.isEmpty {
-                    if session.pairedPhone != nil {
-                        if session.pairedPhone?.networkAddress == nil {
-                            Text("Forget pairing and pair again so HushPort can remember your iPhone address.")
-                                .foregroundStyle(.secondary)
-                        }
-                        Text("Open HushPort on your iPhone and tap Start Listening if it does not appear.")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text("Your iPhone will appear here after pairing.")
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    Picker("Receiver", selection: $session.selectedPeer) {
-                        ForEach(session.peers) { peer in
-                            Text(peer.displayName).tag(Optional(peer))
-                        }
-                    }
+                if session.pairedPhone != nil, session.pairedReceiver == nil {
+                    Text("Open HushPort on your iPhone and tap Start Listening if it does not appear.")
+                        .foregroundStyle(.secondary)
+                } else if let receiver = session.pairedReceiver {
+                    LabeledContent("Receiver", value: receiver.displayName)
+                } else if session.pairedPhone == nil {
+                    Text("Your iPhone will appear here after pairing.")
+                        .foregroundStyle(.secondary)
                 }
             }
             DisclosureGroup("Manual connection") {
@@ -121,6 +114,14 @@ struct SenderView: View {
         .formStyle(.grouped)
         .frame(width: 480, height: 620)
         .onAppear { session.refreshNetworkInfo() }
+    }
+
+    private func serviceReadinessLabel(_ readiness: DiscoveredReceiver.Readiness) -> String {
+        switch readiness {
+        case .ready: "Audio + control"
+        case .audioOnly: "Audio only"
+        case .controlOnly: "Control only"
+        }
     }
 }
 #endif

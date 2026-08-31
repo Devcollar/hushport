@@ -26,9 +26,9 @@ struct MenuBarView: View {
                 Button(session.isMuted ? "Unmute" : "Mute") { session.toggleMute() }
             } else {
                 Button("Stream Mac audio") { session.connectAndStream() }
-                    .disabled(session.currentStreamTarget() == nil)
+                    .disabled(!session.canStartStreaming)
                 Button("Send test tone") { session.sendTestTone() }
-                    .disabled(session.currentStreamTarget() == nil)
+                    .disabled(!session.canStartStreaming)
             }
             Divider()
             Button("Open Settings…") {

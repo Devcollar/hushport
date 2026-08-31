@@ -16,12 +16,19 @@ final class MacSessionController {
         case error(String)
     }
 
+    private struct StreamSessionBinding: Equatable {
+        let generation: UInt64
+        let deviceID: UUID
+        let routeRevision: UInt64
+        let audioEndpoint: NWEndpoint
+        let controlEndpoint: NWEndpoint
+    }
+
     var connectionState: ConnectionState = .searching
     var isMuted = false
     var isSending = false
     var pairedPhone: TrustedDevice?
-    var peers: [HushPortPeer] = []
-    var selectedPeer: HushPortPeer?
+    var discoveredReceivers: [DiscoveredReceiver] = []
     var macPairingCode = PairingCodeGenerator.makeCode()
     var pairingQRImage: Image?
     var status = "Searching for iPhone…"
@@ -33,31 +40,30 @@ final class MacSessionController {
     var networkStatus = "On Wi-Fi"
 
     private let identity: DeviceIdentity
-    private var discovery: HushPortDiscovery?
+    private var discovery: ReceiverDiscovery?
+    private var receiverRegistry: ReceiverRegistry?
     private var controlReceiver: ControlChannelReceiver?
     private var controlTask: Task<Void, Never>?
     private var streamTask: Task<Void, Never>?
     private var keepaliveTask: Task<Void, Never>?
-    private var controlSender: ControlChannelSender?
     private var networkMonitor: NWPathMonitor?
-    private var currentStreamHost: String?
+    private var activeStreamRoute: StreamRoute?
+    private var activeSessionBinding: StreamSessionBinding?
     private var lastNetworkSignature = ""
     private var reconnectTask: Task<Void, Never>?
-    private var pendingPongAddress: String?
     private var streamGeneration: UInt64 = 0
-    private var addressRefreshTask: Task<Void, Never>?
     private var lastMacIPAddress = ""
+    private var lastScheduledReconnectRevision: UInt64?
+    private var bonjourBrowseFailed = false
 
     private init() {
         identity = DeviceIdentityStore.load(defaultName: Host.current().localizedName ?? "Mac")
         pairedPhone = TrustedDeviceStore.primary()
-        clearStalePairedAddressIfNeeded()
         refreshPairingOffer()
         startDiscovery()
         startControlListener()
         startNetworkMonitor()
-        startAddressRefreshLoop()
-        autoSelectPairedPeer()
+        refreshPairedReceiverState()
     }
 
     var menuBarIcon: String {
@@ -73,14 +79,24 @@ final class MacSessionController {
         pairedPhone?.name ?? "Not paired"
     }
 
+    var pairedReceiver: DiscoveredReceiver? {
+        guard let pairedPhone else { return nil }
+        return receiverRegistry?.receiver(for: pairedPhone.id)
+    }
+
+    var canStartStreaming: Bool {
+        if !host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return pairedPhone != nil
+        }
+        return pairedReceiver?.isReady == true
+    }
+
     func refreshNetworkInfo() {
         macAddress = NetworkAddress.localIPv4Address() ?? "No local network address"
-        clearStalePairedAddressIfNeeded()
-        if pairedPhone != nil {
-            Task { await refreshDiscoveredPhoneAddress() }
-        }
         if pairedPhone == nil {
             refreshPairingOffer()
+        } else {
+            refreshPairedReceiverState()
         }
     }
 
@@ -104,7 +120,6 @@ final class MacSessionController {
         TrustedDeviceStore.clear()
         pairedPhone = nil
         phoneReachable = false
-        selectedPeer = nil
         refreshPairingOffer()
         status = "Scan the QR code with your iPhone"
         connectionState = .searching
@@ -114,8 +129,6 @@ final class MacSessionController {
         reconnectTask?.cancel()
         connectionState = .connecting
         status = "Connecting…"
-        clearStalePairedAddressIfNeeded()
-        seedHostFromPairingIfNeeded()
         reconnectTask = Task { await connectAndStreamAsync(useTestTone: false) }
     }
 
@@ -123,8 +136,6 @@ final class MacSessionController {
         reconnectTask?.cancel()
         connectionState = .connecting
         status = "Connecting…"
-        clearStalePairedAddressIfNeeded()
-        seedHostFromPairingIfNeeded()
         reconnectTask = Task { await connectAndStreamAsync(useTestTone: true) }
     }
 
@@ -132,61 +143,116 @@ final class MacSessionController {
         guard !Task.isCancelled else { return }
         streamTask?.cancel()
         keepaliveTask?.cancel()
-        await wakePairedPhone()
-        guard !Task.isCancelled else { return }
-        try? await Task.sleep(for: .milliseconds(300))
-        guard !Task.isCancelled else { return }
 
-        guard let target = await waitForStreamTarget() else {
+        guard let route = await waitForStreamRoute() else {
             guard !Task.isCancelled else { return }
             isSending = false
-            connectionState = peers.isEmpty ? .searching : .idle
+            connectionState = pairedReceiver == nil ? .searching : .idle
             status = pairedPhone == nil
                 ? "Pair your iPhone or enter its address manually"
-                : "Could not reach iPhone. Open HushPort on your iPhone, tap Start Listening, then try again."
+                : manualStreamRoute() != nil
+                    ? "Could not reach iPhone at the manual address."
+                    : bonjourBrowseFailed
+                        ? "Local Network access required — enable HushPort in System Settings → Privacy & Security → Local Network"
+                        : "Looking for your paired iPhone on this network. Open HushPort on iPhone and tap Start Listening."
             return
         }
+
         guard !Task.isCancelled else { return }
-        if target.source == .bonjourPeer || target.source == .pairedDeviceAddress {
-            host = target.host
+        startStreaming(useTestTone: useTestTone, route: route)
+    }
+
+    private func waitForStreamRoute(maxAttempts: Int = 20) async -> StreamRoute? {
+        for attempt in 0..<maxAttempts {
+            guard !Task.isCancelled else { return nil }
+
+            if let route = await automaticStreamRouteIfReady() {
+                return route
+            }
+            if let manual = manualStreamRoute(), await verifyManualRoute(manual) {
+                return manual
+            }
+
+            if attempt == 0 {
+                status = "Looking for iPhone…"
+            }
+            if attempt.isMultiple(of: 4) {
+                await wakePairedPhone()
+            }
+            try? await Task.sleep(for: .milliseconds(500))
         }
-        startStreaming(useTestTone: useTestTone, target: target)
+        return nil
+    }
+
+    private func automaticStreamRouteIfReady() async -> StreamRoute? {
+        guard let pairedPhone,
+              let receiver = receiverRegistry?.receiver(for: pairedPhone.id),
+              let audioEndpoint = receiver.audioEndpoint,
+              let controlEndpoint = receiver.controlEndpoint else {
+            return nil
+        }
+
+        guard await verifyReceiver(controlEndpoint: controlEndpoint, expectedDeviceID: pairedPhone.id) else {
+            return nil
+        }
+
+        return StreamRoute(
+            deviceID: pairedPhone.id,
+            audioEndpoint: audioEndpoint,
+            controlEndpoint: controlEndpoint,
+            routeRevision: receiver.routeRevision,
+            source: .bonjour
+        )
+    }
+
+    private func manualStreamRoute() -> StreamRoute? {
+        let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedHost.isEmpty,
+              let audioPort = NWEndpoint.Port(rawValue: UInt16(exactly: port) ?? HushPortConstants.audioPort),
+              let controlPort = NWEndpoint.Port(rawValue: HushPortConstants.controlPort),
+              let deviceID = pairedPhone?.id else {
+            return nil
+        }
+        return StreamRoute(
+            deviceID: deviceID,
+            audioEndpoint: .hostPort(host: NWEndpoint.Host(trimmedHost), port: audioPort),
+            controlEndpoint: .hostPort(host: NWEndpoint.Host(trimmedHost), port: controlPort),
+            routeRevision: 0,
+            source: .manualHost
+        )
+    }
+
+    private func verifyManualRoute(_ route: StreamRoute) async -> Bool {
+        await verifyReceiver(controlEndpoint: route.controlEndpoint, expectedDeviceID: route.deviceID)
     }
 
     private func wakePairedPhone() async {
-        for peer in matchingPeersForPairedPhone().prefix(3) {
-            await sendPing(to: peer)
-        }
-        let candidates = streamTargetCandidateHosts(resolvedPeerHosts: await resolveAllPeerHosts())
-        for address in candidates.prefix(3) {
-            await sendPing(to: address)
-        }
-    }
-
-    private func sendPing(to address: String) async {
-        do {
-            let sender = try ControlChannelSender(host: address)
-            try await sender.prepare()
-            try await sendPing(using: sender)
-            sender.cancel()
-        } catch {
-            // iPhone may still be waking up.
-        }
-    }
-
-    private func sendPing(to peer: HushPortPeer) async {
-        if let host = await PeerEndpointResolver.resolveHost(for: peer) {
-            await sendPing(to: host)
+        guard let pairedPhone else { return }
+        if let controlEndpoint = receiverRegistry?.receiver(for: pairedPhone.id)?.controlEndpoint {
+            await sendPing(to: controlEndpoint, expectedDeviceID: pairedPhone.id)
             return
         }
+        if let manual = manualStreamRoute() {
+            await sendPing(to: manual.controlEndpoint, expectedDeviceID: manual.deviceID)
+        }
+    }
+
+    private func sendPing(to controlEndpoint: NWEndpoint, expectedDeviceID: UUID) async {
         do {
-            let endpoint = try await PeerEndpointResolver.controlEndpoint(for: peer)
-            let sender = ControlChannelSender(endpoint: endpoint)
+            #if DEBUG
+            print("[CTRL][Mac] event=pingBegin device=\(expectedDeviceID) endpoint=\(controlEndpoint)")
+            #endif
+            let sender = ControlChannelSender(endpoint: controlEndpoint, debugPlatform: "Mac")
             try await sender.prepare()
             try await sendPing(using: sender)
             sender.cancel()
+            #if DEBUG
+            print("[CTRL][Mac] event=pingSendCompleted error=none")
+            #endif
         } catch {
-            // Bonjour resolution may still be in progress.
+            #if DEBUG
+            print("[CTRL][Mac] event=pingSendCompleted error=\(error.localizedDescription)")
+            #endif
         }
     }
 
@@ -201,195 +267,38 @@ final class MacSessionController {
         )
     }
 
-    private func waitForStreamTarget(maxAttempts: Int = 20) async -> StreamTargetResolver.Target? {
-        let port = UInt16(exactly: self.port) ?? HushPortConstants.audioPort
-        for attempt in 0..<maxAttempts {
-            guard !Task.isCancelled else { return nil }
-            let resolvedHosts = await resolveAllPeerHosts()
-            let candidates = streamTargetCandidateHosts(resolvedPeerHosts: resolvedHosts)
-
-            for peer in matchingPeersForPairedPhone() {
-                if let verifiedHost = await pingAndWaitForPong(peer: peer, timeout: .milliseconds(1_200)) {
-                    host = verifiedHost
-                    selectedPeer = peer
-                    updatePairedPhoneAddress(verifiedHost, bonjourName: peer.name)
-                    return StreamTargetResolver.Target(
-                        host: verifiedHost,
-                        port: port,
-                        source: .bonjourPeer
-                    )
-                }
+    private func verifyReceiver(controlEndpoint: NWEndpoint, expectedDeviceID: UUID) async -> Bool {
+        do {
+            #if DEBUG
+            print("[CTRL][Mac] event=pingBegin device=\(expectedDeviceID) endpoint=\(controlEndpoint)")
+            #endif
+            let sender = ControlChannelSender(endpoint: controlEndpoint, debugPlatform: "Mac")
+            defer { sender.cancel() }
+            try await sender.prepare()
+            try await sendPing(using: sender)
+            guard let data = await sender.receive(timeout: .seconds(2)),
+                  let message = try? ControlMessage(decoding: data),
+                  message.type == .pong,
+                  message.senderID == expectedDeviceID else {
+                #if DEBUG
+                print("[CTRL][Mac] event=pongReceived inline matched=false")
+                #endif
+                return false
             }
-
-            for candidate in candidates {
-                if let verifiedHost = await pingAndWaitForPong(host: candidate, timeout: .milliseconds(700)) {
-                    host = verifiedHost
-                    return StreamTargetResolver.Target(
-                        host: verifiedHost,
-                        port: port,
-                        source: resolvedHosts.contains(verifiedHost) ? .bonjourPeer : .pairedDeviceAddress
-                    )
-                }
+            #if DEBUG
+            print("[CTRL][Mac] event=pongReceived inline senderID=\(message.senderID) matched=true")
+            #endif
+            phoneReachable = true
+            if let address = message.networkAddress, !address.isEmpty {
+                updatePairedPhoneAddress(address, bonjourName: pairedReceiver?.displayName)
             }
-
-            if attempt == 0 {
-                status = "Looking for iPhone…"
-            }
-            if attempt.isMultiple(of: 4) {
-                await wakePairedPhone()
-            }
-            try? await Task.sleep(for: .milliseconds(500))
+            return true
+        } catch {
+            #if DEBUG
+            print("[CTRL][Mac] event=pingSendCompleted error=\(error.localizedDescription)")
+            #endif
+            return false
         }
-        return nil
-    }
-
-    private func streamTargetCandidateHosts(resolvedPeerHosts: [String]) -> [String] {
-        var seen = Set<String>()
-        var hosts: [String] = []
-
-        func add(_ value: String?) {
-            guard let value else { return }
-            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty, seen.insert(trimmed).inserted else { return }
-            hosts.append(trimmed)
-        }
-
-        for resolvedHost in resolvedPeerHosts {
-            add(resolvedHost)
-        }
-
-        let storedAddress = pairedPhone?.networkAddress
-        let trimmedManualHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
-        let manualOverride = !trimmedManualHost.isEmpty
-            && trimmedManualHost != storedAddress
-            && !resolvedPeerHosts.contains(trimmedManualHost)
-
-        if resolvedPeerHosts.isEmpty {
-            if let stored = pairedPhone?.networkAddress,
-               isReachableStoredAddress(stored) {
-                add(stored)
-            }
-            add(trimmedManualHost)
-        } else if manualOverride {
-            add(trimmedManualHost)
-        }
-
-        return hosts
-    }
-
-    private func resolveAllPeerHosts() async -> [String] {
-        var hosts: [String] = []
-        var seen = Set<String>()
-
-        func add(_ host: String?) {
-            guard let host, !host.isEmpty, seen.insert(host).inserted else { return }
-            hosts.append(host)
-        }
-
-        let pairedMatches = matchingPeersForPairedPhone()
-        for peer in pairedMatches {
-            if let host = await PeerEndpointResolver.resolveHost(for: peer) {
-                add(host)
-                selectedPeer = peer
-                updatePairedPhoneAddress(host, bonjourName: peer.name)
-            }
-        }
-
-        for peer in peers where !pairedMatches.contains(peer) {
-            if let host = await PeerEndpointResolver.resolveHost(for: peer) {
-                add(host)
-            }
-        }
-
-        if let peer = selectedPeer, let host = await PeerEndpointResolver.resolveHost(for: peer) {
-            add(host)
-            updatePairedPhoneAddress(host, bonjourName: peer.name)
-        }
-
-        return hosts
-    }
-
-    private func matchingPeersForPairedPhone() -> [HushPortPeer] {
-        guard let pairedPhone else { return [] }
-        return peers.filter { peer in
-            peer.deviceID == pairedPhone.id
-                || peer.name == pairedPhone.bonjourName
-                || peer.name == pairedPhone.name
-        }
-    }
-
-    private func resolvePairedPeerHost() async -> String? {
-        for peer in matchingPeersForPairedPhone() {
-            selectedPeer = peer
-            if let host = await PeerEndpointResolver.resolveHost(for: peer) {
-                return host
-            }
-            if let host = await pingAndWaitForPong(peer: peer, timeout: .milliseconds(1_200)) {
-                return host
-            }
-        }
-        return nil
-    }
-
-    private func seedHostFromPairingIfNeeded() {
-        guard host.isEmpty else { return }
-        guard !matchingPeersForPairedPhone().isEmpty else {
-            if let address = pairedPhone?.networkAddress,
-               isReachableStoredAddress(address) {
-                host = address
-            }
-            return
-        }
-    }
-
-    private func isReachableStoredAddress(_ address: String) -> Bool {
-        guard !address.isEmpty else { return false }
-        guard let macIP = NetworkAddress.localIPv4Address() else { return true }
-        return NetworkAddress.isSameIPv4Subnet(macIP, address)
-    }
-
-    private func clearStalePairedAddressIfNeeded() {
-        guard let macIP = NetworkAddress.localIPv4Address(),
-              var device = pairedPhone,
-              let stored = device.networkAddress,
-              !stored.isEmpty else { return }
-        guard !NetworkAddress.isSameIPv4Subnet(macIP, stored) else { return }
-        if host == stored {
-            host = ""
-        }
-        device.networkAddress = nil
-        TrustedDeviceStore.save(device)
-        pairedPhone = device
-    }
-
-    private func pingAndWaitForPong(host: String, timeout: Duration) async -> String? {
-        pendingPongAddress = nil
-        await sendPing(to: host)
-
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if let address = pendingPongAddress {
-                pendingPongAddress = nil
-                return address
-            }
-            try? await Task.sleep(for: .milliseconds(50))
-        }
-        return nil
-    }
-
-    private func pingAndWaitForPong(peer: HushPortPeer, timeout: Duration) async -> String? {
-        pendingPongAddress = nil
-        await sendPing(to: peer)
-
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if let address = pendingPongAddress {
-                pendingPongAddress = nil
-                return address
-            }
-            try? await Task.sleep(for: .milliseconds(50))
-        }
-        return nil
     }
 
     private func resolvedPhoneAddress(from event: ControlMessageEvent) -> String? {
@@ -397,45 +306,6 @@ final class MacSessionController {
             return networkAddress
         }
         return NetworkEndpointHost.ipv4String(from: event.replyEndpoint)
-    }
-
-    func currentStreamTarget() -> StreamTargetResolver.Target? {
-        StreamTargetResolver.resolve(
-            peer: selectedPeer,
-            pairedDevice: pairedPhone,
-            manualHost: host,
-            manualPort: UInt16(exactly: port) ?? HushPortConstants.audioPort,
-            allowStalePairedAddress: false
-        )
-    }
-
-    func resolveStreamTarget() async -> StreamTargetResolver.Target? {
-        var resolvedPeerHost: String?
-
-        for peer in matchingPeersForPairedPhone() {
-            if let host = await PeerEndpointResolver.resolveHost(for: peer) {
-                resolvedPeerHost = host
-                selectedPeer = peer
-                updatePairedPhoneAddress(host, bonjourName: peer.name)
-                break
-            }
-        }
-
-        if resolvedPeerHost == nil, let peer = selectedPeer {
-            resolvedPeerHost = await PeerEndpointResolver.resolveHost(for: peer)
-            if let resolvedPeerHost {
-                updatePairedPhoneAddress(resolvedPeerHost, bonjourName: peer.name)
-            }
-        }
-
-        return StreamTargetResolver.resolve(
-            peer: selectedPeer,
-            resolvedPeerHost: resolvedPeerHost,
-            pairedDevice: pairedPhone,
-            manualHost: host,
-            manualPort: UInt16(exactly: port) ?? HushPortConstants.audioPort,
-            allowStalePairedAddress: false
-        )
     }
 
     func disconnect() {
@@ -446,22 +316,22 @@ final class MacSessionController {
         streamTask = nil
         keepaliveTask?.cancel()
         keepaliveTask = nil
-        controlSender?.cancel()
-        controlSender = nil
-        currentStreamHost = nil
+        activeStreamRoute = nil
+        activeSessionBinding = nil
+        lastScheduledReconnectRevision = nil
         isSending = false
         isMuted = false
-        connectionState = peers.isEmpty ? .searching : .idle
+        connectionState = pairedReceiver == nil ? .searching : .idle
         status = statusMessageForIdleState()
     }
 
     func toggleMute() {
         isMuted.toggle()
-        guard let peer = selectedPeer else { return }
+        guard let controlEndpoint = activeStreamRoute?.controlEndpoint
+            ?? pairedReceiver?.controlEndpoint else { return }
         Task {
             do {
-                let endpoint = try await PeerEndpointResolver.controlEndpoint(for: peer)
-                let sender = ControlChannelSender(endpoint: endpoint)
+                let sender = ControlChannelSender(endpoint: controlEndpoint)
                 try await sender.prepare()
                 try await sender.send(
                     ControlMessage(
@@ -480,19 +350,20 @@ final class MacSessionController {
 
     private func startControlListener() {
         controlTask?.cancel()
+        controlReceiver?.cancel()
         do {
             let receiver = try ControlChannelReceiver()
             controlReceiver = receiver
-            controlTask = Task {
-                do {
-                    for try await event in receiver.events {
-                        guard !Task.isCancelled else { break }
-                        handleControl(event)
-                    }
-                } catch {
-                    status = error.localizedDescription
+            controlTask = Task { @MainActor in
+            do {
+                for try await event in receiver.events {
+                    guard !Task.isCancelled else { break }
+                    handleControl(event)
                 }
+            } catch {
+                status = error.localizedDescription
             }
+        }
         } catch {
             status = error.localizedDescription
         }
@@ -510,7 +381,7 @@ final class MacSessionController {
             let trusted = TrustedDevice(
                 id: event.message.senderID,
                 name: event.message.senderName,
-                bonjourName: selectedPeer?.name,
+                bonjourName: pairedReceiver?.displayName,
                 networkAddress: resolvedPhoneAddress(from: event)
             )
             TrustedDeviceStore.save(trusted)
@@ -518,22 +389,19 @@ final class MacSessionController {
             status = "Paired with \(trusted.name)"
             connectionState = .idle
             respond(.pairAccept, to: event.replyEndpoint)
-            autoSelectPairedPeer()
+            refreshPairedReceiverState()
         case .pong:
-            let fromPairedPhone = event.message.senderID == pairedPhone?.id
-                || event.message.senderName == pairedPhone?.name
-                || event.message.senderName == pairedPhone?.bonjourName
-            if fromPairedPhone {
-                phoneReachable = true
-            }
+            let matchedPairedPhone = event.message.senderID == pairedPhone?.id
+            #if DEBUG
+            print(
+                "[CTRL][Mac] event=pongReceived senderID=\(event.message.senderID) " +
+                "expectedID=\(pairedPhone?.id.uuidString ?? "nil") matched=\(matchedPairedPhone)"
+            )
+            #endif
+            guard matchedPairedPhone else { return }
+            phoneReachable = true
             if let address = resolvedPhoneAddress(from: event) {
-                updatePairedPhoneAddress(
-                    address,
-                    bonjourName: selectedPeer?.name
-                )
-                if fromPairedPhone {
-                    pendingPongAddress = address
-                }
+                updatePairedPhoneAddress(address, bonjourName: pairedReceiver?.displayName)
             }
             if isSending {
                 Task { await reconcileActiveStream() }
@@ -570,68 +438,76 @@ final class MacSessionController {
     }
 
     private func startDiscovery() {
-        discovery = HushPortDiscovery { [weak self] peers in
-            Task { @MainActor in
-                guard let self else { return }
-                self.clearStalePairedAddressIfNeeded()
-                self.peers = peers
-                if let pairedPhone = self.pairedPhone {
-                    self.phoneReachable = peers.contains { peer in
-                        peer.deviceID == pairedPhone.id
-                            || peer.name == pairedPhone.bonjourName
-                            || peer.name == pairedPhone.name
+        discovery = ReceiverDiscovery(
+            onChange: { [weak self] receivers in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.discoveredReceivers = receivers
+                    if !receivers.isEmpty {
+                        self.bonjourBrowseFailed = false
                     }
-                } else {
-                    self.phoneReachable = false
+                    self.refreshPairedReceiverState()
+                    if self.isSending {
+                        self.handleRouteChangeWhileStreaming()
+                    } else {
+                        self.connectionState = self.pairedReceiver == nil ? .searching : .idle
+                        self.status = self.statusMessageForIdleState()
+                    }
                 }
-                if let selectedPeer = self.selectedPeer,
-                   let refreshed = peers.first(where: { $0.id == selectedPeer.id }) {
-                    self.selectedPeer = refreshed
-                } else {
-                    self.autoSelectPairedPeer()
-                }
-                await self.refreshDiscoveredPhoneAddress()
-                if self.isSending {
-                    Task { await self.reconcileActiveStream() }
-                } else if !self.isSending {
-                    self.connectionState = peers.isEmpty ? .searching : .idle
-                    self.status = self.statusMessageForIdleState()
+            },
+            onBrowseIssue: { [weak self] issue in
+                Task { @MainActor in
+                    guard let self else { return }
+                    let authFailure = issue.localizedCaseInsensitiveContains("NoAuth")
+                        || issue.contains("-65555")
+                    if authFailure {
+                        self.bonjourBrowseFailed = true
+                        self.status = self.statusMessageForIdleState()
+                    }
                 }
             }
-        }
+        )
+        receiverRegistry = discovery?.registry
     }
 
     private func restartDiscovery() {
         discovery?.cancel()
         discovery = nil
+        receiverRegistry = nil
+        discoveredReceivers = []
+        bonjourBrowseFailed = false
         startDiscovery()
+    }
+
+    private func refreshPairedReceiverState() {
+        guard let pairedPhone else {
+            phoneReachable = false
+            return
+        }
+        if let receiver = receiverRegistry?.receiver(for: pairedPhone.id), receiver.isReady {
+            phoneReachable = true
+            return
+        }
+        phoneReachable = false
     }
 
     private func statusMessageForIdleState() -> String {
         if pairedPhone == nil {
             return "Scan the QR code with your iPhone"
         }
-        if phoneReachable || !peers.isEmpty {
-            if pairedPhone?.networkAddress == nil {
-                return "iPhone found — resolving address…"
+        guard let receiver = pairedReceiver else {
+            if bonjourBrowseFailed {
+                return "Local Network access required — enable HushPort in System Settings → Privacy & Security → Local Network"
             }
-            return "Ready — tap Stream Mac audio"
+            return "iPhone not discovered yet. Open HushPort on your iPhone."
         }
-        return "iPhone not discovered yet. Open HushPort on your iPhone."
-    }
-
-    private func startAddressRefreshLoop() {
-        addressRefreshTask?.cancel()
-        addressRefreshTask = Task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(3))
-                guard pairedPhone != nil else { continue }
-                guard phoneReachable || !peers.isEmpty else { continue }
-                await refreshDiscoveredPhoneAddress()
-                if !isSending {
-                    status = statusMessageForIdleState()
-                }
-            }
+        switch receiver.readiness {
+        case .ready:
+            return "Ready — tap Stream Mac audio"
+        case .audioOnly:
+            return "iPhone found — waiting for control service…"
+        case .controlOnly:
+            return "iPhone found — waiting for audio service…"
         }
     }
 
@@ -667,13 +543,7 @@ final class MacSessionController {
 
         guard changed else { return }
         if ipChanged, pairedPhone != nil {
-            clearStalePairedAddressIfNeeded()
-            invalidateRouteCacheForNetworkChange()
             restartDiscovery()
-            Task { await refreshDiscoveredPhoneAddress() }
-        } else if pairedPhone != nil {
-            clearStalePairedAddressIfNeeded()
-            Task { await refreshDiscoveredPhoneAddress() }
         }
         if isSending {
             status = "Network changed — reconnecting…"
@@ -683,14 +553,29 @@ final class MacSessionController {
         }
     }
 
-    private func invalidateRouteCacheForNetworkChange() {
-        let storedAddress = pairedPhone?.networkAddress
-        if host.isEmpty || host == storedAddress {
-            host = ""
+    private func handleRouteChangeWhileStreaming() {
+        guard isSending,
+              let pairedPhone,
+              let binding = activeSessionBinding,
+              let receiver = receiverRegistry?.receiver(for: pairedPhone.id),
+              receiver.routeRevision != binding.routeRevision else {
+            return
         }
+        #if DEBUG
+        print("[HushPort] route replacement device=\(pairedPhone.id) old=\(binding.routeRevision) new=\(receiver.routeRevision)")
+        #endif
+        scheduleReconnect()
     }
 
     private func scheduleReconnect() {
+        guard let pairedPhone,
+              let receiver = receiverRegistry?.receiver(for: pairedPhone.id),
+              receiver.isReady else { return }
+        if lastScheduledReconnectRevision == receiver.routeRevision {
+            return
+        }
+        lastScheduledReconnectRevision = receiver.routeRevision
+
         reconnectTask?.cancel()
         reconnectTask = Task {
             try? await Task.sleep(for: .milliseconds(500))
@@ -698,7 +583,8 @@ final class MacSessionController {
             let wasMuted = isMuted
             streamTask?.cancel()
             keepaliveTask?.cancel()
-            currentStreamHost = nil
+            activeStreamRoute = nil
+            activeSessionBinding = nil
             await connectAndStreamAsync(useTestTone: false)
             guard !Task.isCancelled else { return }
             isMuted = wasMuted
@@ -706,14 +592,30 @@ final class MacSessionController {
     }
 
     private func reconcileActiveStream() async {
-        guard isSending else { return }
-        guard let target = await resolveStreamTarget() else { return }
-        if target.host != currentStreamHost {
-            status = "Reconnecting to \(target.host)…"
+        guard isSending,
+              let binding = activeSessionBinding,
+              let receiver = receiverRegistry?.receiver(for: binding.deviceID),
+              receiver.isReady,
+              let audioEndpoint = receiver.audioEndpoint,
+              let controlEndpoint = receiver.controlEndpoint else { return }
+
+        let currentRoute = StreamRoute(
+            deviceID: binding.deviceID,
+            audioEndpoint: audioEndpoint,
+            controlEndpoint: controlEndpoint,
+            routeRevision: receiver.routeRevision,
+            source: .bonjour
+        )
+
+        if currentRoute.routeRevision != binding.routeRevision
+            || currentRoute.audioEndpoint != binding.audioEndpoint
+            || currentRoute.controlEndpoint != binding.controlEndpoint {
             scheduleReconnect()
         }
     }
 
+    /// Persists last-observed address for diagnostics/display only.
+    /// Automatic routing must come from ReceiverRegistry Bonjour endpoints.
     private func updatePairedPhoneAddress(_ address: String?, bonjourName: String?) {
         guard let pairedPhone, let address, !address.isEmpty else { return }
         if pairedPhone.networkAddress == address,
@@ -729,67 +631,36 @@ final class MacSessionController {
         self.pairedPhone = updated
     }
 
-    private func applyDiscoveredPhoneAddress(_ address: String, fromPairedPeer: Bool = false) {
-        guard !address.isEmpty else { return }
-        let previousPaired = pairedPhone?.networkAddress
-        if fromPairedPeer || host.isEmpty || host == previousPaired {
-            host = address
-        }
-        updatePairedPhoneAddress(address, bonjourName: selectedPeer?.name)
-    }
-
-    private func refreshDiscoveredPhoneAddress() async {
-        guard pairedPhone != nil else { return }
-        if let pairedHost = await resolvePairedPeerHost() {
-            applyDiscoveredPhoneAddress(pairedHost, fromPairedPeer: true)
-            return
-        }
-        let resolvedHosts = await resolveAllPeerHosts()
-        if let latest = resolvedHosts.first {
-            applyDiscoveredPhoneAddress(latest)
-        }
-    }
-
-    private func autoSelectPairedPeer() {
-        guard let pairedPhone else {
-            selectedPeer = peers.first
-            return
-        }
-        if let address = pairedPhone.networkAddress, !address.isEmpty,
-           host.isEmpty, matchingPeersForPairedPhone().isEmpty,
-           isReachableStoredAddress(address) {
-            host = address
-        }
-        if let match = peers.first(where: { $0.deviceID == pairedPhone.id || $0.name == pairedPhone.bonjourName }) {
-            selectedPeer = match
-        } else {
-            selectedPeer = peers.first
-        }
-    }
-
-    private func startStreaming(useTestTone: Bool, target: StreamTargetResolver.Target) {
+    private func startStreaming(useTestTone: Bool, route: StreamRoute) {
         guard !Task.isCancelled else { return }
         streamTask?.cancel()
         keepaliveTask?.cancel()
-        controlSender?.cancel()
-        controlSender = nil
         streamGeneration &+= 1
         let generation = streamGeneration
+        let binding = StreamSessionBinding(
+            generation: generation,
+            deviceID: route.deviceID,
+            routeRevision: route.routeRevision,
+            audioEndpoint: route.audioEndpoint,
+            controlEndpoint: route.controlEndpoint
+        )
+        activeSessionBinding = binding
+        activeStreamRoute = route
+        lastScheduledReconnectRevision = nil
         #if DEBUG
-        print("[HushPort] stream generation \(generation) started")
+        print("[HushPort] stream start generation=\(generation) revision=\(route.routeRevision) audio=\(route.audioEndpoint)")
         #endif
         isSending = true
         connectionState = .connecting
         packetsSent = 0
-        currentStreamHost = target.host
-        status = "Connecting to \(target.host)…"
+        status = "Connecting…"
         streamTask = Task {
             var ownedKeepalive: Task<Void, Never>?
             do {
-                let sender = try UDPAudioSender(host: target.host, port: target.port)
+                let sender = UDPAudioSender(endpoint: route.audioEndpoint)
                 defer { sender.cancel() }
                 try await sender.prepare()
-                await notifyReceiver(at: target.host, generation: generation)
+                await notifyReceiver(controlEndpoint: route.controlEndpoint, binding: binding)
                 var sequence: UInt32 = 0
                 let clock = ContinuousClock()
                 var nextDeadline = clock.now
@@ -799,24 +670,22 @@ final class MacSessionController {
                 let capture = useTestTone ? nil : try? SharedAudioCapture()
                 if !useTestTone, capture == nil {
                     setStreamPresentationState(
-                        generation: generation,
+                        binding: binding,
                         status: "HushPort Audio is not running. Select HushPort in System Settings → Sound → Output."
                     )
                 }
                 setStreamPresentationState(
-                    generation: generation,
+                    binding: binding,
                     connectionState: .streaming,
-                    status: useTestTone
-                        ? "Sending test tone to \(target.host)"
-                        : "Streaming Mac audio to \(target.host)"
+                    status: useTestTone ? "Sending test tone" : "Streaming Mac audio"
                 )
-                ownedKeepalive = startKeepalive(to: target.host, generation: generation)
+                ownedKeepalive = startKeepalive(controlEndpoint: route.controlEndpoint, binding: binding)
                 let packetDuration = AudioStreamFormat.prototype.packetDuration
-                while !Task.isCancelled, isCurrentStreamGeneration(generation) {
+                while !Task.isCancelled, isCurrentStreamBinding(binding) {
                     if clock.now < nextDeadline {
                         try await clock.sleep(until: nextDeadline, tolerance: .microseconds(250))
                     }
-                    guard isCurrentStreamGeneration(generation) else { break }
+                    guard isCurrentStreamBinding(binding) else { break }
                     let payload: Data
                     if isMuted {
                         payload = Self.silencePayload()
@@ -832,7 +701,7 @@ final class MacSessionController {
                         silentCaptureFrames += 1
                         if silentCaptureFrames == 48 {
                             setStreamPresentationState(
-                                generation: generation,
+                                binding: binding,
                                 status: "Connected, but no audio from HushPort output. Select HushPort in System Settings → Sound → Output."
                             )
                         }
@@ -846,7 +715,7 @@ final class MacSessionController {
                     )
                     try sender.sendRealtime(packet)
                     sequence &+= 1
-                    if isCurrentStreamGeneration(generation) {
+                    if isCurrentStreamBinding(binding) {
                         packetsSent = Int(sequence)
                     }
                     let advancedDeadline = nextDeadline.advanced(by: packetDuration)
@@ -859,25 +728,26 @@ final class MacSessionController {
             } catch is CancellationError {
             } catch {
                 setStreamPresentationState(
-                    generation: generation,
+                    binding: binding,
                     connectionState: .error(error.localizedDescription),
                     status: error.localizedDescription
                 )
             }
-            finishStreamSession(generation: generation, ownedKeepalive: ownedKeepalive)
+            finishStreamSession(binding: binding, ownedKeepalive: ownedKeepalive)
         }
     }
 
-    private func isCurrentStreamGeneration(_ generation: UInt64) -> Bool {
-        generation == streamGeneration
+    private func isCurrentStreamBinding(_ binding: StreamSessionBinding) -> Bool {
+        binding.generation == streamGeneration
+            && activeSessionBinding == binding
     }
 
     private func setStreamPresentationState(
-        generation: UInt64,
+        binding: StreamSessionBinding,
         connectionState: ConnectionState? = nil,
         status: String? = nil
     ) {
-        guard isCurrentStreamGeneration(generation) else { return }
+        guard isCurrentStreamBinding(binding) else { return }
         if let connectionState {
             self.connectionState = connectionState
         }
@@ -886,10 +756,13 @@ final class MacSessionController {
         }
     }
 
-    private func finishStreamSession(generation: UInt64, ownedKeepalive: Task<Void, Never>?) {
-        guard isCurrentStreamGeneration(generation) else {
+    private func finishStreamSession(
+        binding: StreamSessionBinding,
+        ownedKeepalive: Task<Void, Never>?
+    ) {
+        guard isCurrentStreamBinding(binding) else {
             #if DEBUG
-            print("[HushPort] stale stream generation \(generation) cleanup ignored; current=\(streamGeneration)")
+            print("[HushPort] stale stream generation \(binding.generation) cleanup ignored; current=\(streamGeneration)")
             #endif
             return
         }
@@ -897,29 +770,36 @@ final class MacSessionController {
         keepaliveTask = nil
         streamTask = nil
         isSending = false
-        currentStreamHost = nil
+        activeStreamRoute = nil
+        activeSessionBinding = nil
         if connectionState == .streaming {
             connectionState = .idle
         }
     }
 
     @discardableResult
-    private func startKeepalive(to host: String, generation: UInt64) -> Task<Void, Never> {
+    private func startKeepalive(
+        controlEndpoint: NWEndpoint,
+        binding: StreamSessionBinding
+    ) -> Task<Void, Never> {
         let keepalive = Task {
-            while !Task.isCancelled, isCurrentStreamGeneration(generation) {
+            while !Task.isCancelled, isCurrentStreamBinding(binding) {
                 try? await Task.sleep(for: .seconds(5))
-                guard !Task.isCancelled, isCurrentStreamGeneration(generation) else { break }
-                await notifyReceiver(at: host, generation: generation)
+                guard !Task.isCancelled, isCurrentStreamBinding(binding) else { break }
+                await notifyReceiver(controlEndpoint: controlEndpoint, binding: binding)
             }
         }
         keepaliveTask = keepalive
         return keepalive
     }
 
-    private func notifyReceiver(at host: String, generation: UInt64) async {
-        guard isCurrentStreamGeneration(generation) else { return }
+    private func notifyReceiver(
+        controlEndpoint: NWEndpoint,
+        binding: StreamSessionBinding
+    ) async {
+        guard isCurrentStreamBinding(binding) else { return }
         do {
-            let sender = try ControlChannelSender(host: host)
+            let sender = ControlChannelSender(endpoint: controlEndpoint)
             try await sender.prepare()
             try await sender.send(
                 ControlMessage(
@@ -932,8 +812,8 @@ final class MacSessionController {
             sender.cancel()
         } catch {
             setStreamPresentationState(
-                generation: generation,
-                status: "Streaming to \(host), but could not wake iPhone listener"
+                binding: binding,
+                status: "Streaming, but could not wake iPhone listener"
             )
         }
     }

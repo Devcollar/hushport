@@ -5,6 +5,7 @@ public struct TrustedDevice: Codable, Equatable, Sendable, Identifiable {
     public let name: String
     public let pairedAt: Date
     public var bonjourName: String?
+    /// Last-known IPv4 for display/debug only. Automatic routing uses Bonjour endpoints.
     public var networkAddress: String?
 
     public init(

@@ -45,9 +45,11 @@ final class ReceiverModel {
     private var lastNetworkSignature = ""
     private var linkWatchdog: Task<Void, Never>?
     private var playbackPump: Task<Void, Never>?
-    private var macHeartbeat: Task<Void, Never>?
     private var lastPacketReceivedAt: ContinuousClock.Instant?
     private var isRestartingAfterNetworkChange = false
+    private var networkRestartTask: Task<Void, Never>?
+    /// User intent. Network/listener restarts must preserve this until the user presses Stop.
+    private var listeningIntent = false
     private var pendingPairMacID: UUID?
     private var pendingPairMacAddress: String?
     private var pairingContinuation: CheckedContinuation<TrustedDevice, Error>?
@@ -91,7 +93,7 @@ final class ReceiverModel {
     }
 
     func onAppear() {
-        ensureControlChannel()
+        ensureControlChannel(preferWiFi: networkUsesWiFi)
         registerAudioSessionObservers()
         guard pairedMac != nil else {
             status = "Scan Mac QR code"
@@ -101,9 +103,8 @@ final class ReceiverModel {
         linkState = isListening ? .listening : .paired
         if isListening {
             resumePlaybackIfNeeded()
-            Task { await signalReceiverReadyToMac() }
         } else {
-            startAudio()
+            status = "Ready"
         }
     }
 
@@ -263,7 +264,7 @@ final class ReceiverModel {
     func pair(with offer: MacPairingOffer, validateDeviceID: Bool = true) {
         pairTask?.cancel()
         pairTask = Task {
-            ensureControlChannel()
+            ensureControlChannel(preferWiFi: networkUsesWiFi)
             pendingPairMacID = validateDeviceID ? offer.deviceID : nil
             pendingPairMacAddress = offer.hostAddress
             status = "Pairing…"
@@ -286,7 +287,7 @@ final class ReceiverModel {
                 manualPairingCode = ""
                 manualMacAddress = ""
                 status = "Paired with \(trusted.name)"
-                startAudio()
+                linkState = .paired
             } catch is CancellationError {
             } catch let error as PairingClientError {
                 pendingPairMacID = nil
@@ -299,7 +300,8 @@ final class ReceiverModel {
     }
 
     func startAudio() {
-        guard !isListening else { return }
+        listeningIntent = true
+        guard !isListening, !isRestartingAfterNetworkChange else { return }
         audioOutputIssue = nil
         guard let port = UInt16(exactly: port) else {
             status = "Invalid port"
@@ -313,31 +315,12 @@ final class ReceiverModel {
 
     private func startAudioAsync(port: UInt16) async {
         do {
+            ensureControlChannel(preferWiFi: networkUsesWiFi)
             try await startNetworkListener(port: port)
             startLinkWatchdog()
             refreshStatusMessage()
-            await signalReceiverReadyToMac()
         } catch {
             status = error.localizedDescription
-        }
-    }
-
-    private func signalReceiverReadyToMac() async {
-        guard let host = pairedMac?.networkAddress, !host.isEmpty else { return }
-        do {
-            let sender = try ControlChannelSender(host: host)
-            try await sender.prepare()
-            try await sender.send(
-                ControlMessage(
-                    type: .pong,
-                    senderID: identity.id,
-                    senderName: identity.name,
-                    networkAddress: NetworkAddress.localIPv4Address()
-                )
-            )
-            sender.cancel()
-        } catch {
-            // Mac may not be streaming yet; ping on stream start will wake playback.
         }
     }
 
@@ -361,7 +344,6 @@ final class ReceiverModel {
         packetCount = 0
         playedPacketCount = 0
         startPlaybackPump()
-        startMacHeartbeat()
         audioTask = Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             do {
@@ -379,25 +361,10 @@ final class ReceiverModel {
                 }
             }
             await MainActor.run {
+                guard self.isListening else { return }
                 self.stopAudio(keepStatus: true)
             }
         }
-    }
-
-    private func startMacHeartbeat() {
-        macHeartbeat?.cancel()
-        macHeartbeat = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(3))
-                guard let self, isListening, pairedMac != nil else { continue }
-                await signalReceiverReadyToMac()
-            }
-        }
-    }
-
-    private func stopMacHeartbeat() {
-        macHeartbeat?.cancel()
-        macHeartbeat = nil
     }
 
     private func startLinkWatchdog() {
@@ -424,9 +391,14 @@ final class ReceiverModel {
                         connectionQuality = .unknown
                         refreshStatusMessage()
                         updateConnectionPresentation()
-                        Task { await self.signalReceiverReadyToMac() }
                     } else {
-                        restartAfterNetworkChange()
+                        // Audio inactivity is not a network-path change. Keep the
+                        // listeners stable and wait for the Mac to resume sending.
+                        linkState = .waitingForMac
+                        connectionQuality = .unknown
+                        status = "Waiting for \(pairedMac?.name ?? "Mac")…"
+                        lastPacketReceivedAt = nil
+                        updateConnectionPresentation()
                     }
                 }
             }
@@ -540,11 +512,15 @@ final class ReceiverModel {
             localIPAddress = ip
         }
 
-        if pathChanged, pairedMac != nil {
+        if pathChanged {
             if !snapshot.isSatisfied {
-                linkState = .networkUnavailable
-                connectionQuality = .poor
-                refreshStatusMessage()
+                networkRestartTask?.cancel()
+                networkRestartTask = nil
+                if listeningIntent {
+                    linkState = .networkUnavailable
+                    connectionQuality = .poor
+                    status = "Wi-Fi unavailable — waiting for network"
+                }
             } else {
                 restartAfterNetworkChange()
             }
@@ -552,17 +528,42 @@ final class ReceiverModel {
         updateConnectionPresentation()
     }
 
+    /// Rebinds both Bonjour listeners after a real NWPath change. The previous
+    /// implementation only restarted the audio listener, leaving the control
+    /// service attached to the old network. Restarts are coalesced so rapid path
+    /// updates do not churn listeners.
     private func restartAfterNetworkChange() {
-        guard pairedMac != nil, !isRestartingAfterNetworkChange else { return }
+        networkRestartTask?.cancel()
+        let shouldResumeListening = listeningIntent
         isRestartingAfterNetworkChange = true
-        linkState = .reconnecting
-        connectionQuality = .unknown
-        refreshStatusMessage()
-        stopAudio(keepStatus: true)
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1))
-            isRestartingAfterNetworkChange = false
-            await startAudioAsync(port: UInt16(exactly: port) ?? HushPortConstants.audioPort)
+        if shouldResumeListening {
+            linkState = .reconnecting
+            connectionQuality = .unknown
+            status = "Network changed — reconnecting…"
+        }
+
+        if isListening {
+            stopAudio(keepStatus: true, preserveIntent: true)
+        }
+        stopControlChannel()
+
+        networkRestartTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard let self, !Task.isCancelled else { return }
+
+            self.startControlChannel(preferWiFi: self.networkUsesWiFi)
+            if shouldResumeListening, self.listeningIntent, self.pairedMac != nil {
+                await self.startAudioAsync(
+                    port: UInt16(exactly: self.port) ?? HushPortConstants.audioPort
+                )
+            }
+            guard !Task.isCancelled else { return }
+            self.isRestartingAfterNetworkChange = false
+            self.networkRestartTask = nil
+            if !self.listeningIntent, self.pairedMac != nil {
+                self.linkState = .paired
+                self.status = "Ready"
+            }
         }
     }
 
@@ -624,11 +625,16 @@ final class ReceiverModel {
         }
     }
 
-    func stopAudio(keepStatus: Bool = false) {
+    func stopAudio(keepStatus: Bool = false, preserveIntent: Bool = false) {
+        if !preserveIntent {
+            listeningIntent = false
+            networkRestartTask?.cancel()
+            networkRestartTask = nil
+            isRestartingAfterNetworkChange = false
+        }
         audioTask?.cancel()
         audioTask = nil
         stopPlaybackPump()
-        stopMacHeartbeat()
         stopLinkWatchdog()
         receiver?.cancel()
         receiver = nil
@@ -663,12 +669,28 @@ final class ReceiverModel {
         return error.localizedDescription
     }
 
-    private func ensureControlChannel() {
+    private func ensureControlChannel(preferWiFi: Bool = false) {
         guard controlReceiver == nil else { return }
+        startControlChannel(preferWiFi: preferWiFi)
+    }
+
+    private func stopControlChannel() {
+        controlTask?.cancel()
+        controlTask = nil
+        controlReceiver?.cancel()
+        controlReceiver = nil
+    }
+
+    private func startControlChannel(preferWiFi: Bool) {
+        stopControlChannel()
         do {
-            let controlReceiver = try ControlChannelReceiver()
+            let controlReceiver = try ControlChannelReceiver(
+                serviceName: identity.name,
+                deviceID: identity.id,
+                preferWiFi: preferWiFi
+            )
             self.controlReceiver = controlReceiver
-            controlTask = Task {
+            controlTask = Task { @MainActor in
                 do {
                     for try await event in controlReceiver.events {
                         guard !Task.isCancelled else { break }
@@ -750,43 +772,49 @@ final class ReceiverModel {
                 status = Self.friendlyAudioError(error)
             }
         case .ping:
+            #if DEBUG
+            print(
+                "[CTRL][iOS] event=pingReceived senderID=\(message.senderID) " +
+                "replyEndpoint=\(event.replyEndpoint)"
+            )
+            #endif
             if let macHost = event.message.networkAddress, !macHost.isEmpty {
                 updatePairedMacAddress(macHost)
             } else if let macHost = NetworkEndpointHost.ipv4String(from: event.replyEndpoint) {
                 updatePairedMacAddress(macHost)
             }
-            if !isListening {
-                startAudio()
-            } else {
+            if isListening {
                 drainReadyPayloads()
             }
-            respond(.pong, to: event.replyEndpoint)
+            respondToPing(event)
             refreshStatusMessage()
         default:
             break
         }
     }
 
-    private func respond(_ type: ControlMessageType, to endpoint: NWEndpoint) {
-        Task {
+    private func respondToPing(_ event: ControlMessageEvent) {
+        Task { @MainActor in
             do {
-                guard let replyEndpoint = ControlReplyEndpoint.resolve(endpoint) else {
-                    status = "Could not reply to Mac"
-                    return
-                }
-                let sender = ControlChannelSender(endpoint: replyEndpoint)
-                try await sender.prepare()
-                try await sender.send(
+                #if DEBUG
+                print("[CTRL][iOS] event=pongBegin directFlow=true reply=\(event.replyEndpoint)")
+                #endif
+                try await event.directReply.send(
                     ControlMessage(
-                        type: type,
+                        type: .pong,
                         senderID: identity.id,
                         senderName: identity.name,
                         networkAddress: NetworkAddress.localIPv4Address()
                     )
                 )
-                sender.cancel()
+                #if DEBUG
+                print("[CTRL][iOS] event=pongSendCompleted error=none directFlow=true")
+                #endif
             } catch {
                 status = "Control response failed"
+                #if DEBUG
+                print("[CTRL][iOS] event=pongSendCompleted error=\(error.localizedDescription) directFlow=true")
+                #endif
             }
         }
     }

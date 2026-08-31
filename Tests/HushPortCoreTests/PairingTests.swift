@@ -72,12 +72,3 @@ import Testing
     let parsed = PairingPayload.parse(url)
     #expect(parsed == offer)
 }
-
-@Test func controlReplyEndpointUsesControlPort() {
-    let endpoint = NWEndpoint.hostPort(
-        host: NWEndpoint.Host("192.168.1.20"),
-        port: 54321
-    )
-    let resolved = ControlReplyEndpoint.resolve(endpoint)
-    #expect(resolved == .hostPort(host: "192.168.1.20", port: 49201))
-}

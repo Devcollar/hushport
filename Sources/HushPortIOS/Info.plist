@@ -7,6 +7,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_hushport._udp</string>
+		<string>_hushport-control._udp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>HushPort makes this iPhone discoverable to your Mac and receives audio over your local network.</string>
