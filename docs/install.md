@@ -23,7 +23,9 @@ Run the **HushPortMacApp** scheme on your Mac.
 
 ### TestFlight (recommended for beta testers)
 
-A public TestFlight link will be published on the [HushPort website](https://devcollar.github.io/hushport/) when the first iOS beta build is approved.
+Install from the public TestFlight link: **https://testflight.apple.com/join/Smt218M1**
+
+You need the [TestFlight app](https://apps.apple.com/app/testflight/id899247664) from the App Store. Open the link on your iPhone, tap **Accept** → **Install**.
 
 ### Build from source (developers)
 

@@ -23,7 +23,7 @@ Your Mac. Your phone. Your earphones.
 
 > **Free public beta** — occasional audio dropouts or connection issues may occur. [Report issues](https://github.com/Devcollar/hushport/issues/new/choose) on GitHub.
 
-**Website:** [devcollar.github.io/hushport](https://devcollar.github.io/hushport/)
+**Website:** [devcollar.github.io/hushport](https://devcollar.github.io/hushport/) · **iPhone (TestFlight):** [testflight.apple.com/join/Smt218M1](https://testflight.apple.com/join/Smt218M1)
 
 <table>
   <tr>
@@ -135,7 +135,7 @@ Pair once with a QR code, then reconnect automatically on the same Wi‑Fi.
 
 If discovery fails, enter the iPhone IP shown in the iOS app (**This iPhone: …**) under **Manual connection** on the Mac.
 
-Download and install instructions: **[docs/install.md](docs/install.md)** · **[Website](https://devcollar.github.io/hushport/)**
+Download and install instructions: **[docs/install.md](docs/install.md)** · **[Website](https://devcollar.github.io/hushport/)** · **[TestFlight (iPhone)](https://testflight.apple.com/join/Smt218M1)**
 
 ---
 
