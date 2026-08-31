@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/hushport-logo.png" alt="HushPort" width="128" height="128" />
+</p>
+
 # HushPort
 
 ![Beta](https://img.shields.io/badge/status-public%20beta-orange)

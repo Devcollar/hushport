@@ -3,7 +3,7 @@
 ## Mac
 
 1. Download the latest **`.dmg`** from [GitHub Releases](https://github.com/Devcollar/hushport/releases).
-2. Open the DMG and drag **HushPort** to Applications.
+2. Open the DMG and drag **HushPortMac** to Applications (the app shows as **HushPort** in the menu bar).
 3. Launch HushPort from Applications (approve in **System Settings → Privacy & Security** if macOS blocks the first open).
 4. In the app, click **Install or Update HushPort Audio** and restart your Mac when prompted.
 5. Set **System Settings → Sound → Output → HushPort** (or choose HushPort from the menu bar Sound menu).
