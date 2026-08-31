@@ -1,0 +1,794 @@
+#if os(iOS)
+import AVFAudio
+import HushPortCore
+import Network
+import SwiftUI
+import UIKit
+
+enum ReceiverLinkState: Equatable {
+    case paired
+    case listening
+    case waitingForMac
+    case streaming
+    case reconnecting
+    case networkUnavailable
+}
+@MainActor @Observable
+final class ReceiverModel {
+    var port = Int(HushPortConstants.audioPort)
+    var isListening = false
+    var status = "Ready"
+    var packetCount = 0
+    var playedPacketCount = 0
+    var pairedMac: TrustedDevice?
+    var bufferDepth = HushPortConstants.defaultPrebufferPackets
+    var queuedPackets = 0
+    var connectionQuality: StreamConnectionQuality = .unknown
+    var connectionGuidance: String?
+    var linkState: ReceiverLinkState = .paired
+    var manualPairingCode = ""
+    var manualMacAddress = ""
+    var localIPAddress = NetworkAddress.localIPv4Address() ?? "No Wi-Fi IP"
+
+    private let identity: DeviceIdentity
+    private let playbackEngine = IOSAudioPlaybackEngine()
+    private var receiver: UDPAudioReceiver?
+    private var controlReceiver: ControlChannelReceiver?
+    private var audioTask: Task<Void, Never>?
+    private var controlTask: Task<Void, Never>?
+    private var pairTask: Task<Void, Never>?
+    private var playbackBuffer = AdaptivePlaybackBuffer()
+    private var pendingPlaybackPayload: Data?
+    private var packetsSinceUIUpdate = 0
+    private let networkMonitor = IOSNetworkPathMonitor()
+    private var networkUsesWiFi = true
+    private var lastNetworkSignature = ""
+    private var linkWatchdog: Task<Void, Never>?
+    private var playbackPump: Task<Void, Never>?
+    private var macHeartbeat: Task<Void, Never>?
+    private var lastPacketReceivedAt: ContinuousClock.Instant?
+    private var isRestartingAfterNetworkChange = false
+    private var pendingPairMacID: UUID?
+    private var pendingPairMacAddress: String?
+    private var pairingContinuation: CheckedContinuation<TrustedDevice, Error>?
+    private var sessionObservers: [NSObjectProtocol] = []
+    private var audioOutputIssue: String?
+
+    var canPairManually: Bool {
+        PairingCodeGenerator.isValid(manualPairingCode) && !manualMacAddress.isEmpty
+    }
+
+    var statusIcon: String {
+        if status.contains("Pairing") { return "arrow.triangle.2.circlepath" }
+        if status.contains("Playing") { return "waveform" }
+        if status.contains("Waiting") || status.contains("Scan") { return "qrcode.viewfinder" }
+        if status.contains("Paired") { return "checkmark.circle.fill" }
+        if status.contains("timeout") || status.contains("rejected") || status.contains("Invalid") {
+            return "exclamationmark.triangle.fill"
+        }
+        return isListening ? "antenna.radiowaves.left.and.right" : "circle"
+    }
+
+    var statusColor: Color {
+        if status.contains("Playing") { return .green }
+        if status.contains("timeout") || status.contains("rejected") || status.contains("Invalid") {
+            return .orange
+        }
+        if status.contains("Paired") { return .green }
+        return .accentColor
+    }
+
+    init() {
+        identity = DeviceIdentityStore.load(defaultName: UIDevice.current.name)
+        pairedMac = TrustedDeviceStore.primary()
+        playbackEngine.onNeedsMoreAudio = { [weak self] in
+            self?.drainReadyPayloads()
+        }
+        networkMonitor.onUpdate = { [weak self] snapshot in
+            self?.applyNetworkSnapshot(snapshot)
+        }
+        networkMonitor.start()
+    }
+
+    func onAppear() {
+        ensureControlChannel()
+        registerAudioSessionObservers()
+        guard pairedMac != nil else {
+            status = "Scan Mac QR code"
+            linkState = .paired
+            return
+        }
+        linkState = isListening ? .listening : .paired
+        if isListening {
+            resumePlaybackIfNeeded()
+            Task { await signalReceiverReadyToMac() }
+        } else {
+            startAudio()
+        }
+    }
+
+    func handleScenePhase(_ phase: ScenePhase) {
+        guard isListening else { return }
+        switch phase {
+        case .background, .inactive:
+            try? playbackEngine.prepareForBackground()
+        case .active:
+            resumePlaybackIfNeeded()
+        @unknown default:
+            break
+        }
+    }
+
+    private func resumePlaybackIfNeeded() {
+        do {
+            try playbackEngine.ensurePlaying()
+            audioOutputIssue = nil
+            drainReadyPayloads()
+            refreshStatusMessage()
+        } catch {
+            audioOutputIssue = Self.friendlyAudioError(error)
+            refreshStatusMessage()
+        }
+    }
+
+    private func refreshStatusMessage() {
+        if playedPacketCount > 0 {
+            status = "Playing"
+            linkState = .streaming
+            return
+        }
+        if packetCount > 0 {
+            if let audioOutputIssue {
+                status = "Receiving from \(pairedMac?.name ?? "Mac"). \(audioOutputIssue)"
+            } else {
+                status = "Receiving from \(pairedMac?.name ?? "Mac")"
+            }
+            linkState = .listening
+            return
+        }
+        if linkState == .networkUnavailable {
+            status = "Wi-Fi unavailable — waiting for network"
+            return
+        }
+        if linkState == .reconnecting {
+            status = "Network changed — reconnecting…"
+            return
+        }
+        let macName = pairedMac?.name ?? "Mac"
+        if let audioOutputIssue {
+            status = "Waiting for \(macName). \(audioOutputIssue)"
+        } else {
+            status = "Waiting for \(macName)…"
+        }
+        linkState = isListening ? .waitingForMac : .paired
+    }
+
+    private func registerAudioSessionObservers() {
+        guard sessionObservers.isEmpty else { return }
+
+        sessionObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: AVAudioSession.interruptionNotification,
+                object: AVAudioSession.sharedInstance(),
+                queue: nil
+            ) { [weak self] notification in
+                let isEnding: Bool
+                if let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                   let type = AVAudioSession.InterruptionType(rawValue: typeValue) {
+                    isEnding = type == .ended
+                } else {
+                    isEnding = false
+                }
+                guard isEnding else { return }
+                Task { @MainActor [weak self] in
+                    self?.resumePlaybackIfNeeded()
+                }
+            }
+        )
+
+        sessionObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: AVAudioSession.silenceSecondaryAudioHintNotification,
+                object: AVAudioSession.sharedInstance(),
+                queue: nil
+            ) { [weak self] notification in
+                let otherAppStopped: Bool
+                if let hintValue = notification.userInfo?[AVAudioSessionSilenceSecondaryAudioHintTypeKey] as? UInt {
+                    otherAppStopped = hintValue == AVAudioSession.SilenceSecondaryAudioHintType.end.rawValue
+                } else {
+                    otherAppStopped = false
+                }
+                guard otherAppStopped else { return }
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(for: .milliseconds(200))
+                    self?.resumePlaybackIfNeeded()
+                }
+            }
+        )
+    }
+
+    func forgetPairing() {
+        let macHost = pairedMac?.networkAddress
+        stopAudio()
+        pairTask?.cancel()
+        pairTask = nil
+        pairingContinuation = nil
+        pendingPairMacID = nil
+        pendingPairMacAddress = nil
+        TrustedDeviceStore.clear()
+        pairedMac = nil
+        linkState = .paired
+        connectionQuality = .unknown
+        status = "Scan Mac QR code"
+        if let macHost, !macHost.isEmpty {
+            Task { await notifyMacUnpair(at: macHost) }
+        }
+    }
+
+    private func notifyMacUnpair(at host: String) async {
+        do {
+            let sender = try ControlChannelSender(host: host)
+            try await sender.prepare()
+            try await sender.send(
+                ControlMessage(
+                    type: .unpair,
+                    senderID: identity.id,
+                    senderName: identity.name
+                )
+            )
+            sender.cancel()
+        } catch {
+            // Mac may already be offline.
+        }
+    }
+
+    func pair(withScannedPayload payload: String) {
+        guard let offer = PairingPayload.parse(payload) else {
+            status = "Invalid QR code"
+            return
+        }
+        pair(with: offer)
+    }
+
+    func pairManually() {
+        let offer = MacPairingOffer(
+            deviceID: UUID(),
+            deviceName: "Mac",
+            pairingCode: manualPairingCode,
+            hostAddress: manualMacAddress
+        )
+        pair(with: offer, validateDeviceID: false)
+    }
+
+    func pair(with offer: MacPairingOffer, validateDeviceID: Bool = true) {
+        pairTask?.cancel()
+        pairTask = Task {
+            ensureControlChannel()
+            pendingPairMacID = validateDeviceID ? offer.deviceID : nil
+            pendingPairMacAddress = offer.hostAddress
+            status = "Pairing…"
+            let timeoutTask = Task {
+                try? await Task.sleep(for: .seconds(12))
+                if pairingContinuation != nil {
+                    failPairing(with: PairingClientError.timeout)
+                    pendingPairMacID = nil
+                    pendingPairMacAddress = nil
+                    status = PairingClientError.timeout.localizedDescription
+                }
+            }
+            defer { timeoutTask.cancel() }
+            do {
+                let trusted = try await waitForPairingResult(for: offer)
+                TrustedDeviceStore.save(trusted)
+                pairedMac = trusted
+                pendingPairMacID = nil
+                pendingPairMacAddress = nil
+                manualPairingCode = ""
+                manualMacAddress = ""
+                status = "Paired with \(trusted.name)"
+                startAudio()
+            } catch is CancellationError {
+            } catch let error as PairingClientError {
+                pendingPairMacID = nil
+                status = error.localizedDescription
+            } catch {
+                pendingPairMacID = nil
+                status = error.localizedDescription
+            }
+        }
+    }
+
+    func startAudio() {
+        guard !isListening else { return }
+        audioOutputIssue = nil
+        guard let port = UInt16(exactly: port) else {
+            status = "Invalid port"
+            return
+        }
+
+        Task {
+            await startAudioAsync(port: port)
+        }
+    }
+
+    private func startAudioAsync(port: UInt16) async {
+        do {
+            try await startNetworkListener(port: port)
+            startLinkWatchdog()
+            refreshStatusMessage()
+            await signalReceiverReadyToMac()
+        } catch {
+            status = error.localizedDescription
+        }
+    }
+
+    private func signalReceiverReadyToMac() async {
+        guard let host = pairedMac?.networkAddress, !host.isEmpty else { return }
+        do {
+            let sender = try ControlChannelSender(host: host)
+            try await sender.prepare()
+            try await sender.send(
+                ControlMessage(
+                    type: .pong,
+                    senderID: identity.id,
+                    senderName: identity.name,
+                    networkAddress: NetworkAddress.localIPv4Address()
+                )
+            )
+            sender.cancel()
+        } catch {
+            // Mac may not be streaming yet; ping on stream start will wake playback.
+        }
+    }
+
+    private func startNetworkListener(port: UInt16) async throws {
+        let receiver = try UDPAudioReceiver(
+            port: port,
+            serviceName: identity.name,
+            deviceID: identity.id,
+            preferWiFi: true
+        )
+        try await receiver.prepare()
+        self.receiver = receiver
+        isListening = true
+        linkState = .listening
+        playbackBuffer.reset()
+        pendingPlaybackPayload = nil
+        packetsSinceUIUpdate = 0
+        playbackEngine.setScheduleAheadLimit(24)
+        connectionQuality = .unknown
+        connectionGuidance = nil
+        packetCount = 0
+        playedPacketCount = 0
+        startPlaybackPump()
+        startMacHeartbeat()
+        audioTask = Task(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
+            do {
+                for try await packet in receiver.packets {
+                    guard !Task.isCancelled else { break }
+                    await MainActor.run {
+                        self.handleIncomingPacket(packet)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    if !Task.isCancelled {
+                        self.status = error.localizedDescription
+                    }
+                }
+            }
+            await MainActor.run {
+                self.stopAudio(keepStatus: true)
+            }
+        }
+    }
+
+    private func startMacHeartbeat() {
+        macHeartbeat?.cancel()
+        macHeartbeat = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3))
+                guard let self, isListening, pairedMac != nil else { continue }
+                await signalReceiverReadyToMac()
+            }
+        }
+    }
+
+    private func stopMacHeartbeat() {
+        macHeartbeat?.cancel()
+        macHeartbeat = nil
+    }
+
+    private func startLinkWatchdog() {
+        linkWatchdog?.cancel()
+        linkWatchdog = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+                guard let self, isListening, !isRestartingAfterNetworkChange else { continue }
+
+                if lastPacketReceivedAt == nil {
+                    if packetCount == 0 {
+                        linkState = .waitingForMac
+                        connectionQuality = .unknown
+                        refreshStatusMessage()
+                        updateConnectionPresentation()
+                    }
+                    continue
+                }
+
+                guard let lastPacket = lastPacketReceivedAt else { continue }
+                if ContinuousClock.now - lastPacket > .seconds(4) {
+                    if packetCount == 0 {
+                        linkState = .waitingForMac
+                        connectionQuality = .unknown
+                        refreshStatusMessage()
+                        updateConnectionPresentation()
+                        Task { await self.signalReceiverReadyToMac() }
+                    } else {
+                        restartAfterNetworkChange()
+                    }
+                }
+            }
+        }
+    }
+
+    private func stopLinkWatchdog() {
+        linkWatchdog?.cancel()
+        linkWatchdog = nil
+    }
+
+    private func startPlaybackPump() {
+        playbackPump?.cancel()
+        playbackPump = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(1))
+                guard let self, isListening else { continue }
+                drainReadyPayloads()
+            }
+        }
+    }
+
+    private func stopPlaybackPump() {
+        playbackPump?.cancel()
+        playbackPump = nil
+    }
+
+    private func handleIncomingPacket(_ packet: AudioPacket) {
+        lastPacketReceivedAt = ContinuousClock.now
+        _ = playbackBuffer.ingest(packet)
+        queuedPackets = playbackBuffer.queuedPackets
+        packetCount += 1
+        packetsSinceUIUpdate += 1
+        if packetsSinceUIUpdate >= 20 || playedPacketCount == 0 {
+            packetsSinceUIUpdate = 0
+            updateConnectionPresentation()
+        }
+        drainReadyPayloads()
+    }
+
+    private func drainReadyPayloads() {
+        guard playbackBuffer.queuedPackets > 0 || pendingPlaybackPayload != nil else {
+            queuedPackets = playbackBuffer.queuedPackets
+            return
+        }
+        updatePlaybackScheduleLimit()
+        guard playbackEngine.canAcceptMoreBuffers else {
+            queuedPackets = playbackBuffer.queuedPackets
+            return
+        }
+        do {
+            if !playbackEngine.isRunning {
+                try playbackEngine.prepare()
+                audioOutputIssue = nil
+            }
+        } catch {
+            audioOutputIssue = Self.friendlyAudioError(error)
+            queuedPackets = playbackBuffer.queuedPackets
+            refreshStatusMessage()
+            return
+        }
+        while playbackEngine.canAcceptMoreBuffers {
+            let payload: Data
+            if let pendingPlaybackPayload {
+                self.pendingPlaybackPayload = nil
+                payload = pendingPlaybackPayload
+            } else if let next = playbackBuffer.popReadyPayload() {
+                payload = next
+            } else {
+                break
+            }
+
+            if playbackEngine.schedule(payload: payload, softened: playbackBuffer.lastPopWasConcealment) {
+                playedPacketCount += 1
+                linkState = .streaming
+                audioOutputIssue = nil
+                refreshStatusMessage()
+            } else {
+                pendingPlaybackPayload = payload
+                break
+            }
+        }
+        queuedPackets = playbackBuffer.queuedPackets
+        if packetsSinceUIUpdate == 0 {
+            updateConnectionPresentation()
+        }
+    }
+
+    private func updatePlaybackScheduleLimit() {
+        let queueDepth = playbackBuffer.queuedPackets
+        let scheduled = playbackEngine.scheduledPackets
+        let totalDepth = queueDepth + scheduled
+        let maxTotal = HushPortConstants.maximumPlaybackLatencyPackets + 6
+
+        if totalDepth > maxTotal {
+            playbackEngine.setScheduleAheadLimit(6)
+        } else if queueDepth > HushPortConstants.maximumPlaybackLatencyPackets {
+            playbackEngine.setScheduleAheadLimit(8)
+        } else {
+            let headroom = max(8, 18 - queueDepth / 2)
+            playbackEngine.setScheduleAheadLimit(headroom)
+        }
+    }
+
+    private func applyNetworkSnapshot(_ snapshot: IOSNetworkPathMonitor.Snapshot) {
+        let signature = snapshot.networkSignature
+        let pathChanged = !lastNetworkSignature.isEmpty && signature != lastNetworkSignature
+        lastNetworkSignature = signature
+        networkUsesWiFi = snapshot.usesWiFi
+        if let ip = snapshot.localIPAddress, !ip.isEmpty {
+            localIPAddress = ip
+        }
+
+        if pathChanged, pairedMac != nil {
+            if !snapshot.isSatisfied {
+                linkState = .networkUnavailable
+                connectionQuality = .poor
+                refreshStatusMessage()
+            } else {
+                restartAfterNetworkChange()
+            }
+        }
+        updateConnectionPresentation()
+    }
+
+    private func restartAfterNetworkChange() {
+        guard pairedMac != nil, !isRestartingAfterNetworkChange else { return }
+        isRestartingAfterNetworkChange = true
+        linkState = .reconnecting
+        connectionQuality = .unknown
+        refreshStatusMessage()
+        stopAudio(keepStatus: true)
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1))
+            isRestartingAfterNetworkChange = false
+            await startAudioAsync(port: UInt16(exactly: port) ?? HushPortConstants.audioPort)
+        }
+    }
+
+    private func updatePairedMacAddress(_ address: String) {
+        guard var mac = pairedMac, mac.networkAddress != address else { return }
+        mac.networkAddress = address
+        TrustedDeviceStore.save(mac)
+        pairedMac = mac
+    }
+
+    private func updateConnectionPresentation() {
+        connectionQuality = combinedConnectionQuality()
+        connectionGuidance = guidanceForCurrentConnection()
+    }
+
+    private func combinedConnectionQuality() -> StreamConnectionQuality {
+        guard isListening else { return .unknown }
+        if packetCount > 0, playedPacketCount == 0 {
+            return .poor
+        }
+        if let lastPacket = lastPacketReceivedAt {
+            let age = ContinuousClock.now - lastPacket
+            if age > .seconds(5) { return .poor }
+            if age > .seconds(2) { return .fair }
+            return playedPacketCount > 0 ? .excellent : .fair
+        }
+        return packetCount > 0 ? .fair : .unknown
+    }
+
+    private func guidanceForCurrentConnection() -> String? {
+        switch connectionQuality {
+        case .poor:
+            if packetCount > 0, playedPacketCount == 0 {
+                return "Packets arriving but iPhone speakers are not playing. Tap Stop Listening, turn up volume, then Start Listening again."
+            }
+            if packetCount == 0 || lastPacketReceivedAt == nil {
+                return "Not receiving audio from your Mac. Tap Stream Mac audio on the Mac, or reconnect both devices to the same Wi-Fi."
+            }
+            return "Audio stopped arriving. Reconnecting…"
+        case .fair:
+            return "Audio connection looks unstable."
+        default:
+            return nil
+        }
+    }
+
+    private func prepareAudioPlayback() -> Result<Void, Error> {
+        do {
+            try playbackEngine.prepare()
+            return .success(())
+        } catch {
+            playbackEngine.reset()
+            do {
+                try playbackEngine.prepare()
+                return .success(())
+            } catch let retryError {
+                return .failure(retryError)
+            }
+        }
+    }
+
+    func stopAudio(keepStatus: Bool = false) {
+        audioTask?.cancel()
+        audioTask = nil
+        stopPlaybackPump()
+        stopMacHeartbeat()
+        stopLinkWatchdog()
+        receiver?.cancel()
+        receiver = nil
+        playbackEngine.reset()
+        playbackBuffer.reset()
+        pendingPlaybackPayload = nil
+        packetsSinceUIUpdate = 0
+        isListening = false
+        queuedPackets = 0
+        playedPacketCount = 0
+        lastPacketReceivedAt = nil
+        audioOutputIssue = nil
+        connectionQuality = .unknown
+        if !keepStatus {
+            status = pairedMac == nil ? "Scan Mac QR code" : "Stopped"
+            linkState = .paired
+        }
+    }
+
+    private static func friendlyAudioError(_ error: Error) -> String {
+        let nsError = error as NSError
+        if nsError.domain == NSOSStatusErrorDomain {
+            switch nsError.code {
+            case -50:
+                return "Audio output setup failed. Close other audio apps, turn up volume, then tap Stop and Start Listening again."
+            case 561015905: // AVAudioSessionErrorCodeCannotStartPlaying
+                return "Could not start playback. Tap Stop and Start Listening again."
+            default:
+                return "Audio output error \(nsError.code). Turn up volume and try Start Listening again."
+            }
+        }
+        return error.localizedDescription
+    }
+
+    private func ensureControlChannel() {
+        guard controlReceiver == nil else { return }
+        do {
+            let controlReceiver = try ControlChannelReceiver()
+            self.controlReceiver = controlReceiver
+            controlTask = Task {
+                do {
+                    for try await event in controlReceiver.events {
+                        guard !Task.isCancelled else { break }
+                        handleControl(event)
+                    }
+                } catch {
+                    if !Task.isCancelled {
+                        status = error.localizedDescription
+                    }
+                }
+            }
+        } catch {
+            status = error.localizedDescription
+        }
+    }
+
+    private func sendPairRequest(to offer: MacPairingOffer) async throws {
+        let sender = try ControlChannelSender(host: offer.hostAddress)
+        try await sender.prepare()
+            try await sender.send(
+                ControlMessage(
+                    type: .pairRequest,
+                    senderID: identity.id,
+                    senderName: identity.name,
+                    pairingCode: offer.pairingCode,
+                    networkAddress: NetworkAddress.localIPv4Address()
+                )
+            )
+        sender.cancel()
+    }
+
+    private func waitForPairingResult(for offer: MacPairingOffer) async throws -> TrustedDevice {
+        try await withCheckedThrowingContinuation { continuation in
+            pairingContinuation = continuation
+            Task { @MainActor in
+                do {
+                    try await sendPairRequest(to: offer)
+                } catch {
+                    failPairing(with: error)
+                }
+            }
+        }
+    }
+
+    private func failPairing(with error: Error) {
+        pairingContinuation?.resume(throwing: error)
+        pairingContinuation = nil
+    }
+
+    private func completePairing(with trusted: TrustedDevice) {
+        pairingContinuation?.resume(returning: trusted)
+        pairingContinuation = nil
+    }
+
+    private func handleControl(_ event: ControlMessageEvent) {
+        let message = event.message
+        switch message.type {
+        case .pairAccept:
+            guard pairingContinuation != nil || pendingPairMacID != nil else { return }
+            let trusted = TrustedDevice(
+                id: message.senderID,
+                name: message.senderName,
+                networkAddress: message.networkAddress ?? pendingPairMacAddress
+            )
+            completePairing(with: trusted)
+        case .pairReject:
+            failPairing(with: PairingClientError.rejected)
+            pendingPairMacID = nil
+            status = PairingClientError.rejected.localizedDescription
+        case .mute:
+            playbackEngine.stop()
+            status = "Muted by Mac"
+        case .unmute:
+            do {
+                try playbackEngine.ensurePlaying()
+                status = "Playing"
+                drainReadyPayloads()
+            } catch {
+                status = Self.friendlyAudioError(error)
+            }
+        case .ping:
+            if let macHost = event.message.networkAddress, !macHost.isEmpty {
+                updatePairedMacAddress(macHost)
+            } else if let macHost = NetworkEndpointHost.ipv4String(from: event.replyEndpoint) {
+                updatePairedMacAddress(macHost)
+            }
+            if !isListening {
+                startAudio()
+            } else {
+                drainReadyPayloads()
+            }
+            respond(.pong, to: event.replyEndpoint)
+            refreshStatusMessage()
+        default:
+            break
+        }
+    }
+
+    private func respond(_ type: ControlMessageType, to endpoint: NWEndpoint) {
+        Task {
+            do {
+                guard let replyEndpoint = ControlReplyEndpoint.resolve(endpoint) else {
+                    status = "Could not reply to Mac"
+                    return
+                }
+                let sender = ControlChannelSender(endpoint: replyEndpoint)
+                try await sender.prepare()
+                try await sender.send(
+                    ControlMessage(
+                        type: type,
+                        senderID: identity.id,
+                        senderName: identity.name,
+                        networkAddress: NetworkAddress.localIPv4Address()
+                    )
+                )
+                sender.cancel()
+            } catch {
+                status = "Control response failed"
+            }
+        }
+    }
+}
+#endif

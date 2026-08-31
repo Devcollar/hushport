@@ -82,6 +82,11 @@ import Testing
     #expect(NetworkEndpointHost.ipv4String(from: endpoint) == "192.168.68.120")
 }
 
+@Test func networkAddressDetectsIPv4SubnetMismatch() {
+    #expect(NetworkAddress.isSameIPv4Subnet("192.168.0.109", "192.168.0.175"))
+    #expect(!NetworkAddress.isSameIPv4Subnet("192.168.0.109", "192.168.68.102"))
+}
+
 @Test func udpAudioPacketRoundTrip() async throws {
     let port: UInt16 = 49_211
     let receiver = try UDPAudioReceiver(port: port)

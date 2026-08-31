@@ -26,7 +26,9 @@ public final class UDPAudioSender: @unchecked Sendable {
     }
 
     public init(endpoint: NWEndpoint) {
-        connection = NWConnection(to: endpoint, using: .udp)
+        let parameters = NWParameters.udp
+        parameters.includePeerToPeer = true
+        connection = NWConnection(to: endpoint, using: parameters)
         queue = DispatchQueue(label: "HushPort.UDPAudioSender")
         connection.start(queue: queue)
     }
@@ -165,13 +167,50 @@ public enum PeerEndpointResolver {
         if let host = NetworkEndpointHost.ipv4String(from: peer.endpoint), !host.isEmpty {
             return host
         }
-        for attempt in 0..<3 {
-            if let host = await resolveServiceHost(peer.endpoint, port: HushPortConstants.audioPort) {
+        if case .service = peer.endpoint {
+            if let host = await BonjourHostResolver.resolveHost(from: peer.endpoint) {
                 return host
             }
-            if attempt < 2 {
-                try? await Task.sleep(for: .milliseconds(200 * (attempt + 1)))
+            if let host = await resolveBonjourServiceHost(peer.endpoint) {
+                return host
             }
+        }
+        for port in [HushPortConstants.audioPort, HushPortConstants.controlPort] {
+            for attempt in 0..<3 {
+                if let host = await resolveServiceHost(peer.endpoint, port: port) {
+                    return host
+                }
+                if attempt < 2 {
+                    try? await Task.sleep(for: .milliseconds(250 * (attempt + 1)))
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Resolve a Bonjour service endpoint to an IPv4 address by connecting to the advertised service.
+    public static func resolveBonjourServiceHost(_ endpoint: NWEndpoint) async -> String? {
+        guard case .service = endpoint else { return nil }
+        let parameters = NWParameters.udp
+        parameters.includePeerToPeer = true
+        parameters.allowLocalEndpointReuse = true
+        let connection = NWConnection(to: endpoint, using: parameters)
+        let queue = DispatchQueue(label: "HushPort.BonjourResolve")
+        connection.start(queue: queue)
+        let gate = ReadyGate()
+        do {
+            try await gate.wait(for: connection)
+            defer { connection.cancel() }
+            for _ in 0..<30 {
+                if case let .hostPort(host, _) = connection.currentPath?.remoteEndpoint,
+                   let address = NetworkEndpointHost.ipv4String(from: host),
+                   !address.isEmpty {
+                    return address
+                }
+                try await Task.sleep(for: .milliseconds(100))
+            }
+        } catch {
+            connection.cancel()
         }
         return nil
     }
@@ -187,7 +226,7 @@ public enum PeerEndpointResolver {
                 return host
             }
             group.addTask {
-                try? await Task.sleep(for: .milliseconds(900))
+                try? await Task.sleep(for: .milliseconds(2_500))
                 return nil
             }
             let result = await group.next() ?? nil
@@ -224,14 +263,22 @@ public enum PeerEndpointResolver {
         guard let endpointPort = NWEndpoint.Port(rawValue: port) else {
             throw UDPTransportError.invalidPort(port)
         }
-        let connection = NWConnection(to: endpoint, using: .udp)
+        let parameters = NWParameters.udp
+        parameters.includePeerToPeer = true
+        parameters.allowLocalEndpointReuse = true
+        let connection = NWConnection(to: endpoint, using: parameters)
         let queue = DispatchQueue(label: "HushPort.EndpointResolver")
         connection.start(queue: queue)
         let gate = ReadyGate()
         try await gate.wait(for: connection)
         defer { connection.cancel() }
-        if case let .hostPort(host, _) = connection.currentPath?.remoteEndpoint {
-            return .hostPort(host: host, port: endpointPort)
+        for _ in 0..<20 {
+            if case let .hostPort(host, _) = connection.currentPath?.remoteEndpoint,
+               let address = NetworkEndpointHost.ipv4String(from: host),
+               !address.isEmpty {
+                return .hostPort(host: host, port: endpointPort)
+            }
+            try await Task.sleep(for: .milliseconds(50))
         }
         throw UDPTransportError.connectionFailed("Could not resolve peer address")
     }

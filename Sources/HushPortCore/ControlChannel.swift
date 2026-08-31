@@ -45,7 +45,9 @@ public final class ControlChannelSender: @unchecked Sendable {
     private let readyGate = ReadyGate()
 
     public init(endpoint: NWEndpoint) {
-        connection = NWConnection(to: endpoint, using: .udp)
+        let parameters = NWParameters.udp
+        parameters.includePeerToPeer = true
+        connection = NWConnection(to: endpoint, using: parameters)
         connection.start(queue: queue)
     }
 
@@ -53,7 +55,10 @@ public final class ControlChannelSender: @unchecked Sendable {
         guard let endpointPort = NWEndpoint.Port(rawValue: port) else {
             throw ControlChannelError.invalidPort(port)
         }
-        connection = NWConnection(host: NWEndpoint.Host(host), port: endpointPort, using: .udp)
+        let parameters = NWParameters.udp
+        parameters.includePeerToPeer = true
+        parameters.allowLocalEndpointReuse = true
+        connection = NWConnection(host: NWEndpoint.Host(host), port: endpointPort, using: parameters)
         connection.start(queue: queue)
     }
 

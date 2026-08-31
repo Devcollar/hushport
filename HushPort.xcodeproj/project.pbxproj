@@ -17,7 +17,7 @@
 		100000000000000000000008 /* HushPortAudioPlugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000A /* HushPortAudioPlugin.c */; };
 		100000000000000000000009 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000E /* CoreAudio.framework */; };
 		10000000000000000000000A /* HushPortAudio.driver in Embed Audio Driver */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000D /* HushPortAudio.driver */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		10000000000000000000000B /* HushPortSharedAudio.c in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000F /* HushPortSharedAudio.c */; };
+		10000000000000000000000B /* Sources/HushPortRingBuffer/HushPortSharedAudio.c in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000F /* Sources/HushPortRingBuffer/HushPortSharedAudio.c */; };
 		10000000000000000000000C /* HushPortRingBuffer in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000003 /* HushPortRingBuffer */; };
 		10000000000000000000000D /* SharedAudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* SharedAudioCapture.swift */; };
 		10000000000000000000000F /* MacSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000012 /* MacSessionController.swift */; };
@@ -27,6 +27,19 @@
 		100000000000000000000013 /* IOSAudioPlaybackEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* IOSAudioPlaybackEngine.swift */; };
 		100000000000000000000014 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* Assets.xcassets */; };
 		100000000000000000000015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* Assets.xcassets */; };
+		100000000000000000000016 /* ReceiverModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000018 /* ReceiverModel.swift */; };
+		100000000000000000000017 /* ReceiverDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000019 /* ReceiverDashboardView.swift */; };
+		100000000000000000000018 /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001A /* PairingView.swift */; };
+		100000000000000000000019 /* ManualPairingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001B /* ManualPairingSheet.swift */; };
+		10000000000000000000001A /* HushPortPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001C /* HushPortPalette.swift */; };
+		10000000000000000000001B /* BrandMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001D /* BrandMark.swift */; };
+		10000000000000000000001C /* ConnectionBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001E /* ConnectionBadge.swift */; };
+		10000000000000000000001D /* ReceiverOrb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001F /* ReceiverOrb.swift */; };
+		10000000000000000000001E /* DashboardMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000020 /* DashboardMetric.swift */; };
+		10000000000000000000001F /* ScannerReticle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000021 /* ScannerReticle.swift */; };
+		100000000000000000000020 /* ScannerCorners.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000022 /* ScannerCorners.swift */; };
+		100000000000000000000021 /* LabeledPairingField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000023 /* LabeledPairingField.swift */; };
+		100000000000000000000022 /* IOSNetworkPathMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000024 /* IOSNetworkPathMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +69,19 @@
 /* Begin PBXFileReference section */
 		200000000000000000000001 /* HushPortIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HushPortIOSApp.swift; sourceTree = "<group>"; };
 		200000000000000000000002 /* ReceiverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverView.swift; sourceTree = "<group>"; };
+		200000000000000000000018 /* ReceiverModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverModel.swift; sourceTree = "<group>"; };
+		200000000000000000000019 /* ReceiverDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverDashboardView.swift; sourceTree = "<group>"; };
+		20000000000000000000001A /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
+		20000000000000000000001B /* ManualPairingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualPairingSheet.swift; sourceTree = "<group>"; };
+		20000000000000000000001C /* HushPortPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HushPortPalette.swift; sourceTree = "<group>"; };
+		20000000000000000000001D /* BrandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandMark.swift; sourceTree = "<group>"; };
+		20000000000000000000001E /* ConnectionBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionBadge.swift; sourceTree = "<group>"; };
+		20000000000000000000001F /* ReceiverOrb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverOrb.swift; sourceTree = "<group>"; };
+		200000000000000000000020 /* DashboardMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardMetric.swift; sourceTree = "<group>"; };
+		200000000000000000000021 /* ScannerReticle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerReticle.swift; sourceTree = "<group>"; };
+		200000000000000000000022 /* ScannerCorners.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerCorners.swift; sourceTree = "<group>"; };
+		200000000000000000000023 /* LabeledPairingField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabeledPairingField.swift; sourceTree = "<group>"; };
+		200000000000000000000024 /* IOSNetworkPathMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSNetworkPathMonitor.swift; sourceTree = "<group>"; };
 		200000000000000000000003 /* HushPortMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HushPortMacApp.swift; sourceTree = "<group>"; };
 		200000000000000000000004 /* SenderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SenderView.swift; sourceTree = "<group>"; };
 		200000000000000000000005 /* HushPort.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HushPort.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -67,7 +93,7 @@
 		20000000000000000000000C /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 		20000000000000000000000D /* HushPortAudio.driver */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HushPortAudio.driver; sourceTree = BUILT_PRODUCTS_DIR; };
 		20000000000000000000000E /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
-		20000000000000000000000F /* HushPortSharedAudio.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Sources/HushPortRingBuffer/HushPortSharedAudio.c; sourceTree = SOURCE_ROOT; };
+		20000000000000000000000F /* Sources/HushPortRingBuffer/HushPortSharedAudio.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Sources/HushPortRingBuffer/HushPortSharedAudio.c; sourceTree = SOURCE_ROOT; };
 		200000000000000000000010 /* SharedAudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedAudioCapture.swift; sourceTree = "<group>"; };
 		200000000000000000000012 /* MacSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSessionController.swift; sourceTree = "<group>"; };
 		200000000000000000000013 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -121,13 +147,90 @@
 		400000000000000000000002 /* Sources/HushPortIOS */ = {
 			isa = PBXGroup;
 			children = (
-				200000000000000000000001 /* HushPortIOSApp.swift */,
-				200000000000000000000002 /* ReceiverView.swift */,
+				400000000000000000000008 /* App */,
+				400000000000000000000009 /* Models */,
+				40000000000000000000000A /* Screens */,
+				40000000000000000000000B /* Components */,
+				40000000000000000000000C /* Theme */,
+				40000000000000000000000D /* Infrastructure */,
 				200000000000000000000016 /* IOSAudioPlaybackEngine.swift */,
 				200000000000000000000015 /* PairingScannerView.swift */,
 			);
 			path = Sources/HushPortIOS;
 			sourceTree = SOURCE_ROOT;
+		};
+		400000000000000000000008 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000001 /* HushPortIOSApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		400000000000000000000009 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000018 /* ReceiverModel.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		40000000000000000000000A /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				40000000000000000000000E /* Receiver */,
+				40000000000000000000000F /* Pairing */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		40000000000000000000000B /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				20000000000000000000001D /* BrandMark.swift */,
+				20000000000000000000001E /* ConnectionBadge.swift */,
+				20000000000000000000001F /* ReceiverOrb.swift */,
+				200000000000000000000020 /* DashboardMetric.swift */,
+				200000000000000000000021 /* ScannerReticle.swift */,
+				200000000000000000000022 /* ScannerCorners.swift */,
+				200000000000000000000023 /* LabeledPairingField.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		40000000000000000000000C /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				20000000000000000000001C /* HushPortPalette.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		40000000000000000000000D /* Infrastructure */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000024 /* IOSNetworkPathMonitor.swift */,
+			);
+			path = Infrastructure;
+			sourceTree = "<group>";
+		};
+		40000000000000000000000E /* Receiver */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000002 /* ReceiverView.swift */,
+				200000000000000000000019 /* ReceiverDashboardView.swift */,
+			);
+			path = Receiver;
+			sourceTree = "<group>";
+		};
+		40000000000000000000000F /* Pairing */ = {
+			isa = PBXGroup;
+			children = (
+				20000000000000000000001A /* PairingView.swift */,
+				20000000000000000000001B /* ManualPairingSheet.swift */,
+			);
+			path = Pairing;
+			sourceTree = "<group>";
 		};
 		400000000000000000000003 /* Sources/HushPortMac */ = {
 			isa = PBXGroup;
@@ -160,7 +263,7 @@
 				20000000000000000000000A /* HushPortAudioPlugin.c */,
 				20000000000000000000000B /* Info.plist */,
 				20000000000000000000000C /* LICENSE.txt */,
-				20000000000000000000000F /* HushPortSharedAudio.c */,
+				20000000000000000000000F /* Sources/HushPortRingBuffer/HushPortSharedAudio.c */,
 			);
 			path = Sources/HushPortAudioPlugin;
 			sourceTree = SOURCE_ROOT;
@@ -246,14 +349,6 @@
 		};
 /* End PBXNativeTarget section */
 
-/* Begin PBXTargetDependency section */
-		C00000000000000000000002 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 500000000000000000000003 /* HushPortAudioPlugin */;
-			targetProxy = C00000000000000000000001 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXProject section */
 		600000000000000000000001 /* Project object */ = {
 			isa = PBXProject;
@@ -330,6 +425,19 @@
 			files = (
 				100000000000000000000001 /* HushPortIOSApp.swift in Sources */,
 				100000000000000000000002 /* ReceiverView.swift in Sources */,
+				100000000000000000000016 /* ReceiverModel.swift in Sources */,
+				100000000000000000000017 /* ReceiverDashboardView.swift in Sources */,
+				100000000000000000000018 /* PairingView.swift in Sources */,
+				100000000000000000000019 /* ManualPairingSheet.swift in Sources */,
+				10000000000000000000001A /* HushPortPalette.swift in Sources */,
+				10000000000000000000001B /* BrandMark.swift in Sources */,
+				10000000000000000000001C /* ConnectionBadge.swift in Sources */,
+				10000000000000000000001D /* ReceiverOrb.swift in Sources */,
+				10000000000000000000001E /* DashboardMetric.swift in Sources */,
+				10000000000000000000001F /* ScannerReticle.swift in Sources */,
+				100000000000000000000020 /* ScannerCorners.swift in Sources */,
+				100000000000000000000021 /* LabeledPairingField.swift in Sources */,
+				100000000000000000000022 /* IOSNetworkPathMonitor.swift in Sources */,
 				100000000000000000000013 /* IOSAudioPlaybackEngine.swift in Sources */,
 				100000000000000000000012 /* PairingScannerView.swift in Sources */,
 			);
@@ -354,11 +462,19 @@
 			buildActionMask = 2147483647;
 			files = (
 				100000000000000000000008 /* HushPortAudioPlugin.c in Sources */,
-				10000000000000000000000B /* HushPortSharedAudio.c in Sources */,
+				10000000000000000000000B /* Sources/HushPortRingBuffer/HushPortSharedAudio.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C00000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 500000000000000000000003 /* HushPortAudioPlugin */;
+			targetProxy = C00000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B00000000000000000000001 /* Debug */ = {
@@ -382,6 +498,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V2HN22942W;
@@ -397,6 +514,7 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport;
 				PRODUCT_NAME = HushPort;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -409,6 +527,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V2HN22942W;
@@ -423,6 +542,7 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport;
 				PRODUCT_NAME = HushPort;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -435,10 +555,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/HushPortMac/HushPortMac.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				CODE_SIGN_ENTITLEMENTS = Sources/HushPortMac/HushPortMac.entitlements;
 				DEVELOPMENT_TEAM = V2HN22942W;
 				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
@@ -458,9 +578,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Sources/HushPortMac/HushPortMac-Release.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				CODE_SIGN_ENTITLEMENTS = Sources/HushPortMac/HushPortMac-Release.entitlements;
 				DEVELOPMENT_TEAM = V2HN22942W;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -486,8 +606,8 @@
 				DEVELOPMENT_TEAM = V2HN22942W;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = Sources/HushPortAudioPlugin/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.audio;
 				PRODUCT_NAME = HushPortAudio;
@@ -507,8 +627,8 @@
 				DEVELOPMENT_TEAM = V2HN22942W;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/HushPortAudioPlugin/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.audio;
 				PRODUCT_NAME = HushPortAudio;

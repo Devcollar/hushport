@@ -47,4 +47,12 @@ public enum NetworkAddress {
         }
         return candidates.first?.address
     }
+
+    /// Heuristic /24 same-subnet check for stale DHCP route detection.
+    public static func isSameIPv4Subnet(_ lhs: String, _ rhs: String) -> Bool {
+        let left = lhs.split(separator: ".", omittingEmptySubsequences: false)
+        let right = rhs.split(separator: ".", omittingEmptySubsequences: false)
+        guard left.count == 4, right.count == 4 else { return false }
+        return left.prefix(3) == right.prefix(3)
+    }
 }
