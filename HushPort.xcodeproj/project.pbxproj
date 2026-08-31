@@ -59,7 +59,7 @@
 		200000000000000000000003 /* HushPortMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HushPortMacApp.swift; sourceTree = "<group>"; };
 		200000000000000000000004 /* SenderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SenderView.swift; sourceTree = "<group>"; };
 		200000000000000000000005 /* HushPort.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HushPort.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		200000000000000000000006 /* HushPortMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HushPortMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000006 /* HushPort.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HushPort.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		200000000000000000000007 /* AudioPluginInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPluginInstaller.swift; sourceTree = "<group>"; };
 		200000000000000000000008 /* HushPortMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HushPortMac.entitlements; sourceTree = "<group>"; };
 		20000000000000000000000A /* HushPortAudioPlugin.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HushPortAudioPlugin.c; sourceTree = "<group>"; };
@@ -148,7 +148,7 @@
 			isa = PBXGroup;
 			children = (
 				200000000000000000000005 /* HushPort.app */,
-				200000000000000000000006 /* HushPortMac.app */,
+				200000000000000000000006 /* HushPort.app */,
 				20000000000000000000000D /* HushPortAudio.driver */,
 			);
 			name = Products;
@@ -224,7 +224,7 @@
 				A00000000000000000000003 /* HushPortRingBuffer */,
 			);
 			productName = HushPortMacApp;
-			productReference = 200000000000000000000006 /* HushPortMac.app */;
+			productReference = 200000000000000000000006 /* HushPort.app */;
 			productType = "com.apple.product-type.application";
 		};
 		500000000000000000000003 /* HushPortAudioPlugin */ = {
@@ -394,7 +394,7 @@
 				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport;
 				PRODUCT_NAME = HushPort;
 				SDKROOT = iphoneos;
@@ -420,7 +420,7 @@
 				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport;
 				PRODUCT_NAME = HushPort;
 				SDKROOT = iphoneos;
@@ -446,9 +446,9 @@
 				INFOPLIST_FILE = Sources/HushPortMac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HushPort;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.mac;
-				PRODUCT_NAME = HushPortMac;
+				PRODUCT_NAME = HushPort;
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -458,7 +458,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				CODE_SIGN_ENTITLEMENTS = Sources/HushPortMac/HushPortMac-Release.entitlements;
@@ -468,9 +467,9 @@
 				INFOPLIST_FILE = Sources/HushPortMac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HushPort;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.mac;
-				PRODUCT_NAME = HushPortMac;
+				PRODUCT_NAME = HushPort;
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -489,7 +488,7 @@
 				INFOPLIST_FILE = Sources/HushPortAudioPlugin/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MACH_O_TYPE = mh_bundle;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.audio;
 				PRODUCT_NAME = HushPortAudio;
 				SDKROOT = macosx;
@@ -503,7 +502,6 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Sources/HushPortAudioPlugin/HushPortAudioPlugin.entitlements;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V2HN22942W;
@@ -511,7 +509,7 @@
 				INFOPLIST_FILE = Sources/HushPortAudioPlugin/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MACH_O_TYPE = mh_bundle;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.devcollar.hushport.audio;
 				PRODUCT_NAME = HushPortAudio;
 				SDKROOT = macosx;

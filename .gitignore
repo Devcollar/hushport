@@ -21,6 +21,5 @@ xcuserdata/
 *.swp
 *~
 
-# Env / secrets
-.env
-.env.*
+# Build artifacts
+build/

@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "500000000000000000000002"
-               BuildableName = "HushPortMac.app"
+               BuildableName = "HushPort.app"
                BlueprintName = "HushPortMacApp"
                ReferencedContainer = "container:HushPort.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "500000000000000000000002"
-            BuildableName = "HushPortMac.app"
+            BuildableName = "HushPort.app"
             BlueprintName = "HushPortMacApp"
             ReferencedContainer = "container:HushPort.xcodeproj">
          </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "500000000000000000000002"
-            BuildableName = "HushPortMac.app"
+            BuildableName = "HushPort.app"
             BlueprintName = "HushPortMacApp"
             ReferencedContainer = "container:HushPort.xcodeproj">
          </BuildableReference>
