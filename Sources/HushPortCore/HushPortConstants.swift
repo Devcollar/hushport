@@ -17,4 +17,16 @@ public enum HushPortConstants {
     public static let maximumPlaybackLatencyPackets = 28
     /// Require sustained backlog for this long before dropping one packet.
     public static let sustainedBacklogTrimNanoseconds: UInt64 = 3_000_000_000
+
+    /// Continuous silence before Mac stops sending audio UDP packets while streaming intent stays on.
+    public static let audioIdleThreshold: Duration = .seconds(30)
+
+    /// Peak sample magnitude below this counts as silence when entering idle.
+    public static let audioSilencePeakThreshold: Int16 = 180
+
+    /// Peak sample magnitude at or above this resumes transmission from idle.
+    public static let audioResumePeakThreshold: Int16 = 350
+
+    /// iPhone playback may suspend after this long without new packets while still listening.
+    public static let playbackSuspendAfterNoPackets: Duration = .seconds(30)
 }

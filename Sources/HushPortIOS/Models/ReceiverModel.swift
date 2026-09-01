@@ -55,6 +55,7 @@ final class ReceiverModel {
     private var pairingContinuation: CheckedContinuation<TrustedDevice, Error>?
     private var sessionObservers: [NSObjectProtocol] = []
     private var audioOutputIssue: String?
+    private var playbackSuspendedForIdle = false
 
     var canPairManually: Bool {
         PairingCodeGenerator.isValid(manualPairingCode) && !manualMacAddress.isEmpty
@@ -133,9 +134,14 @@ final class ReceiverModel {
     }
 
     private func refreshStatusMessage() {
-        if playedPacketCount > 0 {
-            status = "Playing"
+        if playedPacketCount > 0, !isWaitingForMacAudio {
+            status = "Playing from Mac"
             linkState = .streaming
+            return
+        }
+        if packetCount > 0, isWaitingForMacAudio {
+            status = "Waiting for audio from \(pairedMac?.name ?? "Mac")"
+            linkState = .waitingForMac
             return
         }
         if packetCount > 0 {
@@ -162,6 +168,12 @@ final class ReceiverModel {
             status = "Waiting for \(macName)…"
         }
         linkState = isListening ? .waitingForMac : .paired
+    }
+
+    private var isWaitingForMacAudio: Bool {
+        guard let lastPacket = lastPacketReceivedAt else { return false }
+        return packetCount > 0
+            && ContinuousClock.now - lastPacket > .seconds(5)
     }
 
     private func registerAudioSessionObservers() {
@@ -385,24 +397,40 @@ final class ReceiverModel {
                 }
 
                 guard let lastPacket = lastPacketReceivedAt else { continue }
-                if ContinuousClock.now - lastPacket > .seconds(4) {
+                let packetAge = ContinuousClock.now - lastPacket
+                if packetAge > .seconds(5) {
                     if packetCount == 0 {
                         linkState = .waitingForMac
                         connectionQuality = .unknown
                         refreshStatusMessage()
                         updateConnectionPresentation()
                     } else {
-                        // Audio inactivity is not a network-path change. Keep the
-                        // listeners stable and wait for the Mac to resume sending.
                         linkState = .waitingForMac
                         connectionQuality = .unknown
-                        status = "Waiting for \(pairedMac?.name ?? "Mac")…"
-                        lastPacketReceivedAt = nil
+                        refreshStatusMessage()
                         updateConnectionPresentation()
+                        suspendPlaybackIfNeeded(packetAge: packetAge)
                     }
                 }
             }
         }
+    }
+
+    private func suspendPlaybackIfNeeded(packetAge: Duration) {
+        guard playedPacketCount > 0,
+              !playbackSuspendedForIdle,
+              packetAge >= HushPortConstants.playbackSuspendAfterNoPackets else {
+            return
+        }
+        playbackEngine.stop()
+        playbackSuspendedForIdle = true
+        Self.logPowerEvent("event=playbackSuspended")
+    }
+
+    private static func logPowerEvent(_ message: String) {
+        #if DEBUG
+        print("[POWER][iOS] \(message)")
+        #endif
     }
 
     private func stopLinkWatchdog() {
@@ -428,6 +456,10 @@ final class ReceiverModel {
 
     private func handleIncomingPacket(_ packet: AudioPacket) {
         lastPacketReceivedAt = ContinuousClock.now
+        if playbackSuspendedForIdle {
+            playbackSuspendedForIdle = false
+            Self.logPowerEvent("event=playbackResumed")
+        }
         _ = playbackBuffer.ingest(packet)
         queuedPackets = playbackBuffer.queuedPackets
         packetCount += 1
@@ -586,7 +618,10 @@ final class ReceiverModel {
         }
         if let lastPacket = lastPacketReceivedAt {
             let age = ContinuousClock.now - lastPacket
-            if age > .seconds(5) { return .poor }
+            if age >= HushPortConstants.playbackSuspendAfterNoPackets {
+                return playedPacketCount > 0 ? .fair : .unknown
+            }
+            if age > .seconds(5) { return .fair }
             if age > .seconds(2) { return .fair }
             return playedPacketCount > 0 ? .excellent : .fair
         }
@@ -602,7 +637,10 @@ final class ReceiverModel {
             if packetCount == 0 || lastPacketReceivedAt == nil {
                 return "Not receiving audio from your Mac. Tap Stream Mac audio on the Mac, or reconnect both devices to the same Wi-Fi."
             }
-            return "Audio stopped arriving. Reconnecting…"
+            if isWaitingForMacAudio {
+                return nil
+            }
+            return "Audio stopped arriving unexpectedly."
         case .fair:
             return "Audio connection looks unstable."
         default:
@@ -646,6 +684,7 @@ final class ReceiverModel {
         queuedPackets = 0
         playedPacketCount = 0
         lastPacketReceivedAt = nil
+        playbackSuspendedForIdle = false
         audioOutputIssue = nil
         connectionQuality = .unknown
         if !keepStatus {

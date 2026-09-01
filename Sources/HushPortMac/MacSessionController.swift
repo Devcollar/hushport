@@ -38,6 +38,7 @@ final class MacSessionController {
     var packetsSent = 0
     var phoneReachable = false
     var networkStatus = "On Wi-Fi"
+    private(set) var audioActivityState: AudioActivityState = .active
 
     private let identity: DeviceIdentity
     private var discovery: ReceiverDiscovery?
@@ -68,11 +69,29 @@ final class MacSessionController {
 
     var menuBarIcon: String {
         switch connectionState {
-        case .streaming: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill"
-        case .connecting, .searching: "dot.radiowaves.left.and.right"
-        case .error: "exclamationmark.triangle.fill"
-        case .idle: "speaker.fill"
+        case .streaming:
+            if audioActivityState == .idle {
+                return "speaker.fill"
+            }
+            return isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill"
+        case .connecting, .searching:
+            return "dot.radiowaves.left.and.right"
+        case .error:
+            return "exclamationmark.triangle.fill"
+        case .idle:
+            return "speaker.fill"
         }
+    }
+
+    var streamingStatusLabel: String {
+        guard isSending else { return status }
+        if audioActivityState == .idle {
+            return "Waiting for audio…"
+        }
+        if isMuted {
+            return "Streaming Mac audio (muted)"
+        }
+        return "Streaming Mac audio"
     }
 
     var pairedPhoneName: String {
@@ -321,6 +340,7 @@ final class MacSessionController {
         lastScheduledReconnectRevision = nil
         isSending = false
         isMuted = false
+        audioActivityState = .active
         connectionState = pairedReceiver == nil ? .searching : .idle
         status = statusMessageForIdleState()
     }
@@ -652,10 +672,12 @@ final class MacSessionController {
         #endif
         isSending = true
         connectionState = .connecting
+        audioActivityState = .active
         packetsSent = 0
         status = "Connecting…"
         streamTask = Task {
             var ownedKeepalive: Task<Void, Never>?
+            let activityTracker = AudioActivityTracker()
             do {
                 let sender = UDPAudioSender(endpoint: route.audioEndpoint)
                 defer { sender.cancel() }
@@ -667,6 +689,7 @@ final class MacSessionController {
                 var phase = 0.0
                 var silentCaptureFrames = 0
                 var lastCapturedPayload: Data?
+                var suppressingPackets = false
                 let capture = useTestTone ? nil : try? SharedAudioCapture()
                 if !useTestTone, capture == nil {
                     setStreamPresentationState(
@@ -674,11 +697,12 @@ final class MacSessionController {
                         status: "HushPort Audio is not running. Select HushPort in System Settings → Sound → Output."
                     )
                 }
-                setStreamPresentationState(
+                updateStreamingPresentation(
                     binding: binding,
-                    connectionState: .streaming,
-                    status: useTestTone ? "Sending test tone" : "Streaming Mac audio"
+                    useTestTone: useTestTone,
+                    activityState: .active
                 )
+                Self.logPowerEvent("event=audioActive")
                 ownedKeepalive = startKeepalive(controlEndpoint: route.controlEndpoint, binding: binding)
                 let packetDuration = AudioStreamFormat.prototype.packetDuration
                 while !Task.isCancelled, isCurrentStreamBinding(binding) {
@@ -686,17 +710,29 @@ final class MacSessionController {
                         try await clock.sleep(until: nextDeadline, tolerance: .microseconds(250))
                     }
                     guard isCurrentStreamBinding(binding) else { break }
-                    let payload: Data
+
+                    let observedPayload: Data
+                    var transmitPayload: Data?
                     if isMuted {
-                        payload = Self.silencePayload()
+                        observedPayload = Self.silencePayload()
+                        transmitPayload = useTestTone ? nil : observedPayload
                     } else if useTestTone {
-                        payload = Self.tonePayload(phase: &phase)
-                    } else if let capture, let captured = capture.readPayload() {
-                        silentCaptureFrames = 0
-                        lastCapturedPayload = captured
-                        payload = captured
-                    } else if let lastCapturedPayload {
-                        payload = lastCapturedPayload
+                        observedPayload = Self.tonePayload(phase: &phase)
+                        transmitPayload = observedPayload
+                    } else if let capture {
+                        if let captured = capture.readPayload() {
+                            silentCaptureFrames = 0
+                            lastCapturedPayload = captured
+                            observedPayload = captured
+                            transmitPayload = captured
+                        } else {
+                            observedPayload = Self.silencePayload()
+                            if activityTracker.activityState == .active, let lastCapturedPayload {
+                                transmitPayload = lastCapturedPayload
+                            } else {
+                                transmitPayload = observedPayload
+                            }
+                        }
                     } else {
                         silentCaptureFrames += 1
                         if silentCaptureFrames == 48 {
@@ -705,19 +741,45 @@ final class MacSessionController {
                                 status: "Connected, but no audio from HushPort output. Select HushPort in System Settings → Sound → Output."
                             )
                         }
-                        payload = Self.silencePayload()
+                        observedPayload = Self.silencePayload()
+                        transmitPayload = observedPayload
                     }
-                    let packet = AudioPacket(
-                        streamID: HushPortConstants.defaultStreamID,
-                        sequenceNumber: sequence,
-                        captureTimeNanoseconds: DispatchTime.now().uptimeNanoseconds,
-                        payload: payload
-                    )
-                    try sender.sendRealtime(packet)
-                    sequence &+= 1
-                    if isCurrentStreamBinding(binding) {
-                        packetsSent = Int(sequence)
+
+                    if !useTestTone {
+                        if let event = activityTracker.observePayload(observedPayload) {
+                            handleAudioActivityEvent(
+                                event,
+                                binding: binding,
+                                useTestTone: useTestTone,
+                                activityTracker: activityTracker
+                            )
+                        }
+                        if activityTracker.shouldSuppressTransmission(for: observedPayload) {
+                            if !suppressingPackets {
+                                suppressingPackets = true
+                                Self.logPowerEvent("event=audioPacketSuppressionStarted")
+                            }
+                            transmitPayload = nil
+                        } else if suppressingPackets {
+                            suppressingPackets = false
+                            Self.logPowerEvent("event=audioPacketSuppressionEnded")
+                        }
                     }
+
+                    if let transmitPayload {
+                        let packet = AudioPacket(
+                            streamID: HushPortConstants.defaultStreamID,
+                            sequenceNumber: sequence,
+                            captureTimeNanoseconds: DispatchTime.now().uptimeNanoseconds,
+                            payload: transmitPayload
+                        )
+                        try sender.sendRealtime(packet)
+                        sequence &+= 1
+                        if isCurrentStreamBinding(binding) {
+                            packetsSent = Int(sequence)
+                        }
+                    }
+
                     let advancedDeadline = nextDeadline.advanced(by: packetDuration)
                     if clock.now > advancedDeadline {
                         nextDeadline = clock.now.advanced(by: packetDuration)
@@ -735,6 +797,64 @@ final class MacSessionController {
             }
             finishStreamSession(binding: binding, ownedKeepalive: ownedKeepalive)
         }
+    }
+
+    private func updateStreamingPresentation(
+        binding: StreamSessionBinding,
+        useTestTone: Bool,
+        activityState: AudioActivityState
+    ) {
+        guard isCurrentStreamBinding(binding) else { return }
+        audioActivityState = activityState
+        if useTestTone {
+            setStreamPresentationState(
+                binding: binding,
+                connectionState: .streaming,
+                status: "Sending test tone"
+            )
+            return
+        }
+        let status = activityState == .idle ? "Waiting for audio…" : "Streaming Mac audio"
+        setStreamPresentationState(binding: binding, connectionState: .streaming, status: status)
+    }
+
+    private func handleAudioActivityEvent(
+        _ event: AudioActivityEvent,
+        binding: StreamSessionBinding,
+        useTestTone: Bool,
+        activityTracker: AudioActivityTracker
+    ) {
+        switch event {
+        case .becameIdle(let silenceDurationNanoseconds):
+            Self.logPowerEvent(
+                "event=audioIdle silenceDuration=\(Self.seconds(fromNanoseconds: silenceDurationNanoseconds))"
+            )
+            updateStreamingPresentation(
+                binding: binding,
+                useTestTone: useTestTone,
+                activityState: activityTracker.activityState
+            )
+        case .becameActive(let idleDurationNanoseconds):
+            Self.logPowerEvent(
+                "event=audioResume idleDuration=\(Self.seconds(fromNanoseconds: idleDurationNanoseconds))"
+            )
+            Self.logPowerEvent("event=audioActive")
+            updateStreamingPresentation(
+                binding: binding,
+                useTestTone: useTestTone,
+                activityState: activityTracker.activityState
+            )
+        }
+    }
+
+    private static func seconds(fromNanoseconds nanoseconds: UInt64) -> String {
+        String(format: "%.1f", Double(nanoseconds) / 1_000_000_000)
+    }
+
+    private static func logPowerEvent(_ message: String) {
+        #if DEBUG
+        print("[POWER][Mac] \(message)")
+        #endif
     }
 
     private func isCurrentStreamBinding(_ binding: StreamSessionBinding) -> Bool {
@@ -770,6 +890,7 @@ final class MacSessionController {
         keepaliveTask = nil
         streamTask = nil
         isSending = false
+        audioActivityState = .active
         activeStreamRoute = nil
         activeSessionBinding = nil
         if connectionState == .streaming {

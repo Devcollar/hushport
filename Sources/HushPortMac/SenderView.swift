@@ -76,7 +76,7 @@ struct SenderView: View {
             }
             Section {
                 HStack {
-                    Button(session.isSending ? "Stop" : "Stream Mac audio") {
+                    Button(session.isSending ? "Stop Streaming" : "Stream Mac audio") {
                         session.isSending ? session.disconnect() : session.connectAndStream()
                     }
                     .keyboardShortcut(.defaultAction)
@@ -85,7 +85,7 @@ struct SenderView: View {
                     }
                     .disabled(session.isSending)
                 }
-                Text(session.status)
+                Text(session.streamingStatusLabel)
                     .foregroundStyle(.secondary)
                     .font(.caption)
                 if session.isSending {

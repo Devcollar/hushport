@@ -16,13 +16,13 @@ struct MenuBarView: View {
                     .padding(.vertical, 2)
                     .background(.orange.opacity(0.2), in: Capsule())
             }
-            Text(session.status)
+            Text(session.streamingStatusLabel)
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Divider()
             LabeledContent("Paired iPhone", value: session.pairedPhoneName)
             if session.isSending {
-                Button("Disconnect") { session.disconnect() }
+                Button("Stop Streaming") { session.disconnect() }
                 Button(session.isMuted ? "Unmute" : "Mute") { session.toggleMute() }
             } else {
                 Button("Stream Mac audio") { session.connectAndStream() }
