@@ -17,10 +17,14 @@
   <style>
     .hero-grid {
       display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 36px;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: 32px;
       align-items: center;
       padding: 36px 0 20px;
+    }
+
+    .hero-copy {
+      min-width: 0;
     }
 
     .hero-copy h1 {
@@ -67,38 +71,60 @@
     }
 
     .hero-visual {
-      display: grid;
-      gap: 14px;
+      min-width: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .device-showcase {
+      position: relative;
+      width: min(100%, 460px);
+      margin: 0 auto;
+      padding: 0 12px 8px;
     }
 
     .shot {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 12px;
+      padding: 10px;
       box-shadow: var(--shadow);
+      margin: 0;
     }
 
     .shot img {
       width: 100%;
       height: auto;
-      border-radius: 12px;
+      border-radius: 10px;
       display: block;
     }
 
     .shot figcaption {
       margin-top: 8px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--muted);
       text-align: center;
     }
 
-    .shot-mac { grid-column: 1; }
+    .shot-mac {
+      width: 100%;
+    }
+
     .shot-ios {
-      max-width: 240px;
-      margin: -48px 0 0 auto;
-      position: relative;
+      position: absolute;
+      right: 12px;
+      bottom: 8px;
+      width: 34%;
+      min-width: 110px;
+      max-width: 168px;
       z-index: 2;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+    }
+
+    .shot-ios figcaption {
+      display: none;
     }
 
     .steps-row {
@@ -149,9 +175,18 @@
 
     @media (max-width: 900px) {
       .hero-grid { grid-template-columns: 1fr; }
+      .device-showcase {
+        width: min(100%, 520px);
+        padding-bottom: 0;
+      }
       .shot-ios {
-        max-width: 220px;
-        margin: 0 auto;
+        position: static;
+        width: min(52%, 220px);
+        margin: 16px auto 0;
+        box-shadow: var(--shadow);
+      }
+      .shot-ios figcaption {
+        display: block;
       }
       .steps-row { grid-template-columns: 1fr 1fr; }
     }
@@ -209,14 +244,16 @@
       </div>
 
       <div class="hero-visual">
-        <figure class="shot shot-mac">
-          <img src="screenshots/mac-streaming.png" alt="HushPort Mac app streaming audio" width="960" height="540" loading="eager" />
-          <figcaption>Mac — stream to your iPhone</figcaption>
-        </figure>
-        <figure class="shot shot-ios">
-          <img src="screenshots/ios-streaming.png" alt="HushPort iPhone app playing audio" width="390" height="844" loading="eager" />
-          <figcaption>iPhone — speaker or earphones</figcaption>
-        </figure>
+        <div class="device-showcase">
+          <figure class="shot shot-mac">
+            <img src="screenshots/mac-streaming.png" alt="HushPort Mac app streaming audio" width="960" height="540" loading="eager" />
+            <figcaption>Mac — stream to your iPhone</figcaption>
+          </figure>
+          <figure class="shot shot-ios">
+            <img src="screenshots/ios-streaming.png" alt="HushPort iPhone app playing audio" width="390" height="844" loading="eager" />
+            <figcaption>iPhone — speaker or earphones</figcaption>
+          </figure>
+        </div>
       </div>
     </section>
 
