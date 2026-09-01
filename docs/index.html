@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="HushPort streams your Mac's audio to your iPhone over Wi-Fi. Free public beta. No account. No cloud." />
+  <meta name="description" content="HushPort streams your Mac's audio to your iPhone over Wi-Fi. Free public beta 2. No account. No cloud." />
   <title>HushPort — Hear your Mac on your iPhone</title>
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
@@ -13,124 +13,42 @@
   <meta property="og:image" content="https://devcollar.github.io/hushport/assets/hushport-logo-512.png" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:image" content="https://devcollar.github.io/hushport/assets/hushport-logo-512.png" />
+  <link rel="stylesheet" href="assets/site.css" />
   <style>
-    :root {
-      --bg: #050814;
-      --panel: #0e1220;
-      --panel-raised: #141a2b;
-      --border: rgba(255, 255, 255, 0.09);
-      --text: #f4f6ff;
-      --muted: rgba(244, 246, 255, 0.62);
-      --brand: #6b4dff;
-      --brand-bright: #3c7dff;
-      --cyan: #33c3ff;
-      --success: #2ec87a;
-      --orange: #ff9f43;
-      --max: 1080px;
-      --radius: 20px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.55;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .bg-glow {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -1;
-      background:
-        radial-gradient(ellipse 70% 50% at 10% -10%, rgba(107, 77, 255, 0.22), transparent 55%),
-        radial-gradient(ellipse 60% 45% at 90% 0%, rgba(60, 125, 255, 0.14), transparent 50%),
-        radial-gradient(ellipse 50% 40% at 50% 100%, rgba(51, 195, 255, 0.08), transparent 55%);
-    }
-
-    a { color: var(--cyan); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
-
-    header {
-      padding: 28px 0 12px;
-      display: flex;
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 36px;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+      padding: 36px 0 20px;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 700;
-      font-size: 1.15rem;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      text-decoration: none;
-    }
-
-    .brand:hover { text-decoration: none; }
-
-    .logo {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      object-fit: cover;
-      box-shadow: 0 8px 28px rgba(107, 77, 255, 0.25);
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      background: rgba(255, 159, 67, 0.14);
-      color: #ffc078;
-      border: 1px solid rgba(255, 159, 67, 0.28);
-    }
-
-    .hero {
-      padding: 48px 0 32px;
-      text-align: center;
-    }
-
-    .hero h1 {
-      font-size: clamp(2.2rem, 5vw, 3.6rem);
-      line-height: 1.08;
-      letter-spacing: -0.03em;
+    .hero-copy h1 {
+      font-size: clamp(2.3rem, 5vw, 3.5rem);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
       font-weight: 800;
-      max-width: 14ch;
-      margin: 0 auto 18px;
+      margin-bottom: 16px;
     }
 
-    .hero .lead {
-      font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+    .hero-copy .lead {
+      font-size: clamp(1.02rem, 2vw, 1.2rem);
       color: var(--muted);
-      max-width: 46ch;
-      margin: 0 auto 28px;
+      max-width: 44ch;
+      margin-bottom: 22px;
     }
 
     .pill-row {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 32px;
+      gap: 8px;
+      margin-bottom: 24px;
     }
 
     .pill {
-      padding: 8px 14px;
+      padding: 7px 12px;
       border-radius: 999px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--muted);
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border);
@@ -139,68 +57,26 @@
     .cta-row {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
-      gap: 14px;
-      margin-bottom: 16px;
+      gap: 12px;
+      margin-bottom: 14px;
     }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 15px 24px;
-      border-radius: 14px;
-      font-size: 1rem;
-      font-weight: 650;
-      text-decoration: none;
-      border: 1px solid transparent;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .btn:hover { text-decoration: none; transform: translateY(-1px); }
-
-    .btn-primary {
-      color: white;
-      background: linear-gradient(135deg, #7a2fff, var(--brand-bright));
-      box-shadow: 0 12px 36px rgba(107, 77, 255, 0.35);
-    }
-
-    .btn-secondary {
-      color: var(--text);
-      background: var(--panel-raised);
-      border-color: var(--border);
-    }
-
-    .btn-soon {
-      color: var(--muted);
-      background: rgba(255, 255, 255, 0.03);
-      border-color: var(--border);
-      cursor: default;
-    }
-
-    .btn-soon:hover { transform: none; }
 
     .cta-note {
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       color: var(--muted);
-      margin-bottom: 40px;
     }
 
-    .shots {
+    .hero-visual {
       display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 20px;
-      align-items: start;
-      margin: 12px 0 56px;
+      gap: 14px;
     }
 
     .shot {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      padding: 12px;
+      box-shadow: var(--shadow);
     }
 
     .shot img {
@@ -211,230 +87,218 @@
     }
 
     .shot figcaption {
-      margin-top: 10px;
-      font-size: 0.82rem;
+      margin-top: 8px;
+      font-size: 0.8rem;
       color: var(--muted);
       text-align: center;
     }
 
-    .shot.ios { padding: 14px 28px; }
-
-    section { padding: 20px 0 48px; }
-
-    h2 {
-      font-size: 1.6rem;
-      letter-spacing: -0.02em;
-      margin-bottom: 24px;
-      text-align: center;
+    .shot-mac { grid-column: 1; }
+    .shot-ios {
+      max-width: 240px;
+      margin: -48px 0 0 auto;
+      position: relative;
+      z-index: 2;
     }
 
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
-    }
-
-    .card {
-      background: linear-gradient(180deg, rgba(107, 77, 255, 0.08), rgba(14, 18, 32, 0.9));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-    }
-
-    .card .icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: rgba(60, 125, 255, 0.16);
-      margin-bottom: 14px;
-      font-size: 1.3rem;
-    }
-
-    .card h3 {
-      font-size: 1.05rem;
-      margin-bottom: 8px;
-    }
-
-    .card p {
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-
-    .beta-box {
-      background: var(--panel);
-      border: 1px solid rgba(255, 159, 67, 0.25);
-      border-radius: var(--radius);
-      padding: 28px;
-      text-align: center;
-      margin: 8px 0 48px;
-    }
-
-    .beta-box h3 {
-      color: #ffc078;
-      margin-bottom: 10px;
-      font-size: 1.1rem;
-    }
-
-    .beta-box p { color: var(--muted); max-width: 58ch; margin: 0 auto 16px; }
-
-    .steps {
+    .steps-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-top: 8px;
+      gap: 12px;
     }
 
     .step {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 18px;
+      padding: 18px 14px;
       text-align: center;
     }
 
     .step .num {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       margin: 0 auto 10px;
       display: grid;
       place-items: center;
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       background: linear-gradient(135deg, var(--brand), var(--brand-bright));
     }
 
-    .step p { font-size: 0.9rem; color: var(--muted); }
+    .step p { font-size: 0.88rem; color: var(--muted); }
 
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 28px 0 40px;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-
-    .footer-row {
+    .download-strip {
       display: flex;
       flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 12px;
       align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: linear-gradient(90deg, rgba(107, 77, 255, 0.1), rgba(60, 125, 255, 0.06));
     }
 
-    .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
+    .download-strip p {
+      color: var(--muted);
+      font-size: 0.92rem;
+      max-width: 48ch;
+    }
 
-    @media (max-width: 860px) {
-      .shots { grid-template-columns: 1fr; }
-      .shot.ios { max-width: 320px; margin: 0 auto; }
-      .grid-3 { grid-template-columns: 1fr; }
-      .steps { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .shot-ios {
+        max-width: 220px;
+        margin: 0 auto;
+      }
+      .steps-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 520px) {
+      .steps-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="bg-glow"></div>
 
-  <div class="wrap">
-    <header>
+  <header class="site-header">
+    <div class="wrap">
       <a class="brand" href="./">
-        <img class="logo" src="assets/hushport-logo.png" alt="" width="40" height="40" />
+        <img class="logo" src="assets/hushport-logo.png" alt="" width="36" height="36" />
         HushPort
       </a>
-      <span class="badge">Free public beta</span>
-    </header>
+      <nav class="site-nav" aria-label="Primary">
+        <a class="nav-link" href="install.html">Install</a>
+        <a class="nav-link" href="privacy.html">Privacy</a>
+        <a class="nav-link" href="https://github.com/Devcollar/hushport">GitHub</a>
+        <span class="badge">Beta 2</span>
+      </nav>
+    </div>
+  </header>
 
-    <section class="hero">
-      <h1>Hear your Mac.<br />Anywhere nearby.</h1>
-      <p class="lead">
-        Stream your Mac&rsquo;s audio straight to your iPhone over Wi&#8209;Fi.
-        No account. No cloud. Just your devices on your network.
-      </p>
+  <main class="wrap">
+    <section class="hero-grid">
+      <div class="hero-copy">
+        <h1>Hear your Mac.<br />On your iPhone.</h1>
+        <p class="lead">
+          Stream system audio from your Mac to your iPhone over local Wi&#8209;Fi.
+          Pair once. No account. No cloud.
+        </p>
 
-      <div class="pill-row">
-        <span class="pill">macOS + iPhone</span>
-        <span class="pill">QR pairing</span>
-        <span class="pill">Local network only</span>
-        <span class="pill">Source visible on GitHub</span>
+        <div class="pill-row">
+          <span class="pill">macOS 14+</span>
+          <span class="pill">iOS 17+</span>
+          <span class="pill">Auto discovery</span>
+          <span class="pill">Local network only</span>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/Devcollar/hushport/releases/download/v0.1.0-beta.2/HushPort-0.1.0-beta.2.dmg">
+            Download for Mac
+          </a>
+          <a class="btn btn-secondary" href="https://testflight.apple.com/join/Smt218M1">
+            iPhone (TestFlight)
+          </a>
+        </div>
+        <p class="cta-note">
+          New here? See the <a href="install.html">install guide</a> for step-by-step setup.
+        </p>
       </div>
 
-      <div class="cta-row">
-        <a class="btn btn-primary" href="https://github.com/Devcollar/hushport/releases" id="mac-download">
-          Download for Mac
-        </a>
-        <a class="btn btn-secondary" href="https://testflight.apple.com/join/Smt218M1" id="ios-testflight">
-          Get on iPhone (TestFlight)
-        </a>
-      </div>
-      <p class="cta-note">
-        Mac: <a href="https://github.com/Devcollar/hushport/releases">GitHub Releases</a>.
-        iPhone: <a href="https://testflight.apple.com/join/Smt218M1">TestFlight public beta</a>.
-      </p>
-
-      <div class="shots">
-        <figure class="shot">
-          <img src="screenshots/mac-streaming.png" alt="HushPort Mac app streaming audio to iPhone" width="960" height="540" loading="eager" />
-          <figcaption>Mac — stream system audio to your iPhone</figcaption>
+      <div class="hero-visual">
+        <figure class="shot shot-mac">
+          <img src="screenshots/mac-streaming.png" alt="HushPort Mac app streaming audio" width="960" height="540" loading="eager" />
+          <figcaption>Mac — stream to your iPhone</figcaption>
         </figure>
-        <figure class="shot ios">
-          <img src="screenshots/ios-streaming.png" alt="HushPort iPhone app playing Mac audio" width="390" height="844" loading="eager" />
-          <figcaption>iPhone — listen on speaker or earphones</figcaption>
+        <figure class="shot shot-ios">
+          <img src="screenshots/ios-streaming.png" alt="HushPort iPhone app playing audio" width="390" height="844" loading="eager" />
+          <figcaption>iPhone — speaker or earphones</figcaption>
         </figure>
       </div>
     </section>
 
-    <section>
-      <h2>How it works</h2>
-      <div class="steps">
+    <section class="section-tight">
+      <div class="changelog">
+        <h3>What&rsquo;s new in beta 2 <span class="version">v0.1.0-beta.2</span></h3>
+        <ul>
+          <li><strong>Idle power mode</strong> — Mac stops sending silent packets after 30 seconds while streaming stays enabled; audio resumes automatically.</li>
+          <li><strong>Reliable auto-discovery</strong> — iPhone found via Bonjour on your Wi&#8209;Fi; manual IP rarely needed.</li>
+          <li><strong>Stable control channel</strong> — faster ping/pong verification and fewer reconnect issues.</li>
+          <li><strong>iPhone stays listening</strong> during Mac silence — no false &ldquo;reconnecting&rdquo; churn.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title center">How it works</h2>
+      <p class="section-lead center">Four steps. About a minute to set up.</p>
+      <div class="steps-row">
         <div class="step"><div class="num">1</div><p>Open HushPort on Mac &amp; iPhone</p></div>
-        <div class="step"><div class="num">2</div><p>Scan the QR code to pair</p></div>
-        <div class="step"><div class="num">3</div><p>Tap <strong>Start Listening</strong> on iPhone</p></div>
-        <div class="step"><div class="num">4</div><p>Tap <strong>Stream Mac audio</strong> on Mac</p></div>
+        <div class="step"><div class="num">2</div><p>Scan QR code to pair once</p></div>
+        <div class="step"><div class="num">3</div><p><strong>Start Listening</strong> on iPhone</p></div>
+        <div class="step"><div class="num">4</div><p><strong>Stream Mac audio</strong> on Mac</p></div>
       </div>
     </section>
 
-    <section>
-      <h2>Why HushPort</h2>
+    <section class="section">
+      <h2 class="section-title center">Built for privacy</h2>
       <div class="grid-3">
         <article class="card">
-          <div class="icon">📱</div>
-          <h3>Instant pairing</h3>
-          <p>Scan a QR code once. Reconnect automatically on the same Wi&#8209;Fi.</p>
+          <div class="icon-chip">📡</div>
+          <h3>Direct over Wi&#8209;Fi</h3>
+          <p>Audio goes Mac → iPhone on your LAN. Nothing is uploaded to a cloud server.</p>
         </article>
         <article class="card">
-          <div class="icon">🎧</div>
-          <h3>Low-latency audio</h3>
-          <p>Native Swift apps stream PCM directly over your LAN — not through the cloud.</p>
+          <div class="icon-chip">⚡</div>
+          <h3>Low latency</h3>
+          <p>Native Swift apps stream PCM in small UDP packets tuned for real-time playback.</p>
         </article>
         <article class="card">
-          <div class="icon">🔒</div>
-          <h3>Private by design</h3>
-          <p>No accounts, no tracking. Source is public for inspection under a proprietary license.</p>
+          <div class="icon-chip">🔒</div>
+          <h3>No accounts</h3>
+          <p>Pair with a QR code. Source is public on GitHub for inspection.</p>
         </article>
       </div>
     </section>
 
-    <div class="beta-box">
-      <h3>HushPort is in beta</h3>
-      <p>
-        You may occasionally hear dropouts, slight delay on long sessions, or need to re-enter an IP after a network change.
-        That&rsquo;s expected — please <a href="https://github.com/Devcollar/hushport/issues/new/choose">report issues on GitHub</a>.
-      </p>
-      <a class="btn btn-secondary" href="https://github.com/Devcollar/hushport">View source on GitHub</a>
-    </div>
-
-    <footer>
-      <div class="footer-row">
-        <span>&copy; 2026 Devcollar Private Limited</span>
-        <nav class="footer-links" aria-label="Footer">
-          <a href="privacy.html">Privacy</a>
-          <a href="https://github.com/Devcollar/hushport/blob/main/docs/overview.md">Technical overview</a>
-          <a href="https://github.com/Devcollar/hushport/issues">Issues</a>
-          <a href="https://github.com/Devcollar/hushport/blob/main/LICENSE">License</a>
-        </nav>
+    <section class="section">
+      <div class="download-strip">
+        <div>
+          <h2 class="section-title" style="font-size:1.2rem; margin-bottom:6px;">Ready to try it?</h2>
+          <p>Download the Mac DMG and install the iPhone app from TestFlight. Full instructions on the install page.</p>
+        </div>
+        <div class="cta-row" style="margin:0;">
+          <a class="btn btn-primary" href="install.html">Install guide</a>
+          <a class="btn btn-secondary" href="https://github.com/Devcollar/hushport/releases">All releases</a>
+        </div>
       </div>
-    </footer>
-  </div>
+    </section>
+
+    <section class="section" style="padding-top:0;">
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:8px;">Public beta</h3>
+        <p style="max-width:52ch; margin:0 auto 16px;">
+          You may hear occasional dropouts or need to restart listening after a Wi&#8209;Fi change.
+          Please <a href="https://github.com/Devcollar/hushport/issues/new/choose">report issues on GitHub</a>.
+        </p>
+        <a class="btn btn-ghost" href="https://github.com/Devcollar/hushport">View source</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>&copy; 2026 Devcollar Private Limited</span>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="install.html">Install</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://github.com/Devcollar/hushport/blob/main/docs/overview.md">Technical overview</a>
+        <a href="https://github.com/Devcollar/hushport/issues">Issues</a>
+      </nav>
+    </div>
+  </footer>
 </body>
 </html>

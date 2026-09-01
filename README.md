@@ -135,7 +135,7 @@ Pair once with a QR code, then reconnect automatically on the same Wi‑Fi.
 
 If discovery fails, enter the iPhone IP shown in the iOS app (**This iPhone: …**) under **Manual connection** on the Mac.
 
-Download and install instructions: **[docs/install.md](docs/install.md)** · **[Website](https://devcollar.github.io/hushport/)** · **[TestFlight (iPhone)](https://testflight.apple.com/join/Smt218M1)**
+Download and install instructions: **[install guide](https://devcollar.github.io/hushport/install.html)** · **[Website](https://devcollar.github.io/hushport/)** · **[TestFlight (iPhone)](https://testflight.apple.com/join/Smt218M1)**
 
 ---
 

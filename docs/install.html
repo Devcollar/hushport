@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Install HushPort on Mac and iPhone — beta 2 download, TestFlight, pairing, and troubleshooting." />
+  <title>Install — HushPort</title>
+  <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="assets/site.css" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./">
+        <img class="logo" src="assets/hushport-logo.png" alt="" width="36" height="36" />
+        HushPort
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a class="nav-link" href="./">Home</a>
+        <a class="nav-link" href="privacy.html">Privacy</a>
+        <a class="nav-link" href="https://github.com/Devcollar/hushport">GitHub</a>
+        <span class="badge">Beta 2</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="page-hero">
+      <h1>Install HushPort</h1>
+      <p>
+        Get the Mac app from GitHub Releases and the iPhone app from TestFlight.
+        Pair once with a QR code, then stream over your local Wi&#8209;Fi.
+      </p>
+    </section>
+
+    <section class="section-tight">
+      <div class="install-grid">
+        <article class="install-card">
+          <h2>Mac</h2>
+          <p class="platform">macOS 14 or later · Apple Silicon or Intel</p>
+          <ol class="steps-list">
+            <li>Download <strong><a href="https://github.com/Devcollar/hushport/releases/download/v0.1.0-beta.2/HushPort-0.1.0-beta.2.dmg">HushPort-0.1.0-beta.2.dmg</a></strong> (or the latest from <a href="https://github.com/Devcollar/hushport/releases">Releases</a>).</li>
+            <li>Open the DMG and drag <strong>HushPort</strong> to Applications.</li>
+            <li>Launch from Applications. Approve in <strong>System Settings → Privacy &amp; Security</strong> if macOS blocks the first open.</li>
+            <li>Enable <strong>Local Network</strong> for HushPort when prompted.</li>
+            <li>Click <strong>Install or Update HushPort Audio</strong> and restart your Mac.</li>
+            <li>Set <strong>System Settings → Sound → Output → HushPort</strong>.</li>
+            <li>Pair your iPhone using the QR code in the Mac app.</li>
+          </ol>
+          <div class="tip-box">
+            Beta 2 finds your iPhone automatically on the same Wi&#8209;Fi — you usually don&rsquo;t need a manual IP address.
+          </div>
+        </article>
+
+        <article class="install-card">
+          <h2>iPhone</h2>
+          <p class="platform">iOS 17 or later · physical device required</p>
+          <ol class="steps-list">
+            <li>Install <a href="https://apps.apple.com/app/testflight/id899247664">TestFlight</a> from the App Store.</li>
+            <li>Open <strong><a href="https://testflight.apple.com/join/Smt218M1">the HushPort TestFlight link</a></strong> on your iPhone.</li>
+            <li>Tap <strong>Accept</strong> → <strong>Install</strong>.</li>
+            <li>Open HushPort and scan the Mac QR code to pair.</li>
+            <li>Tap <strong>Start Listening</strong> when you want to receive audio.</li>
+          </ol>
+          <div class="tip-box">
+            The iOS Simulator cannot receive LAN audio. Use a real iPhone on the same Wi&#8209;Fi as your Mac.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Daily use</h2>
+      <div class="grid-3">
+        <article class="card">
+          <div class="icon-chip">1</div>
+          <h3>Start Listening</h3>
+          <p>Open HushPort on iPhone and tap <strong>Start Listening</strong>.</p>
+        </article>
+        <article class="card">
+          <div class="icon-chip">2</div>
+          <h3>Stream on Mac</h3>
+          <p>On Mac, tap <strong>Stream Mac audio</strong> (or send a test tone first).</p>
+        </article>
+        <article class="card">
+          <div class="icon-chip">3</div>
+          <h3>Listen</h3>
+          <p>Audio plays on your iPhone speaker or connected earphones.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Troubleshooting</h2>
+      <div class="faq">
+        <details>
+          <summary>iPhone not found on Mac</summary>
+          <p>On iPhone, tap <strong>Stop Listening</strong> then <strong>Start Listening</strong>. On Mac, enable <strong>Local Network</strong> for HushPort in System Settings. Both devices must be on the same Wi&#8209;Fi (not guest network).</p>
+        </details>
+        <details>
+          <summary>No audio playing on iPhone</summary>
+          <p>Confirm Mac sound output is <strong>HushPort</strong>. Turn up iPhone volume. Try <strong>Send test tone</strong> on Mac first.</p>
+        </details>
+        <details>
+          <summary>Streaming enabled but silence on Mac</summary>
+          <p>Beta 2 stops sending silent packets after ~30 seconds to save power. Mac shows <strong>Waiting for audio…</strong> but streaming stays on — audio resumes automatically when sound returns.</p>
+        </details>
+        <details>
+          <summary>After changing Wi&#8209;Fi</summary>
+          <p>Tap <strong>Stop Listening</strong> → <strong>Start Listening</strong> on iPhone, then stream again from Mac.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top: 0;">
+      <div class="cta-row" style="display:flex; flex-wrap:wrap; gap:12px;">
+        <a class="btn btn-primary" href="https://github.com/Devcollar/hushport/releases/download/v0.1.0-beta.2/HushPort-0.1.0-beta.2.dmg">Download Mac DMG</a>
+        <a class="btn btn-secondary" href="https://testflight.apple.com/join/Smt218M1">Get iPhone TestFlight</a>
+        <a class="btn btn-ghost" href="https://github.com/Devcollar/hushport/issues/new/choose">Report an issue</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>&copy; 2026 Devcollar Private Limited</span>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="./">Home</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://github.com/Devcollar/hushport">GitHub</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
